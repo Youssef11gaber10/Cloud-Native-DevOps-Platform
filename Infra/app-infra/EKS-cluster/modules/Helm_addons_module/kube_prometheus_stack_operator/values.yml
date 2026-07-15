@@ -1,0 +1,49 @@
+nodeExporter:
+  enabled: true
+# grafana:
+#   enabled: false
+
+  
+prometheus:
+  prometheusSpec:
+    retention: 10d
+
+additionalPrometheusRulesMap:
+  node-rules:
+    groups:
+      - name: node.rules
+        rules:
+          # - alert: HighCPUUsage
+          #   expr: |
+          #     100 - (avg by(instance)
+          #     (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 90
+          #   for: 30s
+          #   labels:
+          #     severity: critical
+
+          - alert: HighCPUUsageCritical
+            expr: 100 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100 > 90 # if node avg cpu idle (not working 9% - 100) is more than 90% so its use more than 90$
+            for: 30s # still in pending state for 1 minute then fire alert to alertmanager
+            labels: 
+              severity: "critical"
+            annotations:  
+              summary: 'cpu usage high'
+              description: 'cpu usage above 90% on {{ $labels.instance }}'
+
+alertmanager:
+  config:
+    route:
+      receiver: slack
+
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: slack
+
+    receivers:
+      - name: slack
+        slack_configs:
+          - api_url: ""
+            channel: ""
+            send_resolved: true
+            
