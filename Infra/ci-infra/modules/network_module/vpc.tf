@@ -1,7 +1,7 @@
 resource "aws_vpc" "ci_vpc" {
   # take region from provider.tf default region for your resources 
   # cidr_block = "10.100.0.0/16"
-  cidr_block = var.vpc_cidr
+  cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true # to allow dns name in this vpc , to connect to db with endpoint (dns name)
 
   tags = {

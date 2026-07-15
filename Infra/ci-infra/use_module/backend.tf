@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
-    bucket       = "terraform-remote-backend-youssef"
-    key          = "terraform.tfstate"
+    bucket = "terraform-remote-backend-youssef"
+    key    = "terraform.tfstate"
     # key          = "dev/terraform.tfstate"#where you want save state file on bucket 
     # key          = "test/terraform.tfstate"
     # key          = "prod/terraform.tfstate"

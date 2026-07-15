@@ -1,9 +1,9 @@
 output "bastion_public_ip" {
-    value= aws_instance.ec2_bastion_host_ci_vpc.public_ip
+  value = aws_instance.ec2_bastion_host_ci_vpc.public_ip
 }
 
 output "ci_master_public_ip" {
-    value= aws_instance.CI_Master.private_ip
+  value = aws_instance.CI_Master.private_ip
 }
 
 
@@ -12,6 +12,6 @@ output "ci_agent_private_ips" {
 }
 
 
-output "jenkins_url"{
+output "jenkins_url" {
   value = "http://${aws_lb.ci-alb.dns_name}"
 }

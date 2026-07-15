@@ -109,3 +109,26 @@ resource "aws_security_group" "CI_Agent_SG_allow_ssh_from_Bastion_SG_and_allow_2
 
   tags = { Name = "CI_Agent_SG_allow_ssh_from_Bastion_SG_and_allow_22_50000_from_Master_SG" }
 }
+
+
+resource "aws_security_group" "EFS_SG_allow_2049_from_CI_Master_SG" {
+  name   = "EFS_SG_allow_2049_from_CI_Master_SG"
+  vpc_id = var.vpc_id
+
+  ingress {
+    from_port       = 2049
+    to_port         = 2049
+    protocol        = "tcp"
+    security_groups = [aws_security_group.CI_Master_SG_allow_ssh_from_Bastion_SG_and_allow_8080_from_ALB_SG.id]
+  }
+
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "EFS_SG_allow_2049_from_CI_Master_SG" }
+}

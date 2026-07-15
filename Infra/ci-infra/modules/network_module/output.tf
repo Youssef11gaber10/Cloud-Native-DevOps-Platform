@@ -1,6 +1,24 @@
-output "NM_subnets" { # ths get subnet object consist of 4 subnets i can traverse inside of them use (public-subnet1, public-subnet2, private-subnet1, private-subnet2)
-    value= aws_subnet.subnet_ci_vpc # give me all subnet i can use them 
+output "NM_subnets" {              # this gives you the whole dictionary key and value
+  value = aws_subnet.subnet_ci_vpc # give me all subnet i can use them 
 }
+
+
+output "NM_public_subnets" {
+  value = {
+    for name, subnet in aws_subnet.subnet_ci_vpc :
+    name => subnet
+    if subnet.map_public_ip_on_launch
+  }
+}
+
+output "NM_private_subnets" {
+  value = {
+    for name, subnet in aws_subnet.subnet_ci_vpc :
+    name => subnet
+    if subnet.map_public_ip_on_launch == false
+  }
+}
+
 
 output "NM_vpc_id" {
   value = aws_vpc.ci_vpc.id

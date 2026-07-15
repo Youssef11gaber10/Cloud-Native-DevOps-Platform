@@ -1,6 +1,6 @@
 output "vpc_id" {
   # value= aws_vpc.terraform_lab1_vpc.id
-  value= module.network.NM_vpc_id
+  value = module.network.NM_vpc_id
 }
 
 output "agent_ips" {
@@ -10,7 +10,7 @@ output "master_ip" {
   value = module.ci-resources.ci_master_public_ip
 }
 
-output "jenkins_url"{
+output "jenkins_url" {
   value = module.ci-resources.jenkins_url
 }
 

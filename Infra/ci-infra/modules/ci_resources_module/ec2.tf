@@ -1,17 +1,17 @@
 
 resource "aws_instance" "ec2_bastion_host_ci_vpc" {
 
-  
+
   # ami                         = "ami-09e320d375d7b8d3e"                                                  # ami for amazon linux 23
-  ami                         = data.aws_ami.amazon_linux_23.id # get ami_id from data source
+  ami = data.aws_ami.amazon_linux_23.id # get ami_id from data source
   # instance_type             = "t3.micro"      
-  instance_type               = var.bastion_instance_type                                                          # t3.micro t2.micro not exist in stockholm
-  subnet_id                   = var.public_1_subnet_id
-                            # public subnet 
+  instance_type = var.bastion_instance_type      # t3.micro t2.micro not exist in stockholm
+  subnet_id     = var.list_public_subnets_ids[0] # will create at any public subnet 
+  # public subnet 
 
   vpc_security_group_ids      = [aws_security_group.Bastion_SG_allow_ssh_from_anywhere.id] # use bastion SG
-  associate_public_ip_address = true                                                                     # create public ip
-  key_name                    = "ssh-private-key"                                                        # use key pair this 
+  associate_public_ip_address = true                                                       # create public ip
+  key_name                    = "ssh-private-key"                                          # use key pair this 
   tags = {
     Name = "Bastion_host"
   }
@@ -28,16 +28,16 @@ resource "aws_instance" "CI_Master" {
 
   # ami                    = "ami-07aacd2013ac45b9e" # ami for my ami have nginx on amazon linux 23
   # ami                    = data.aws_ami.nginx_my_ami.id # get ami_id from data source
-  ami                    = data.aws_ami.amazon_linux_23.id 
-  availability_zone = "eu-north-1a"
-  
-  # instance_type          = "t3.micro"
-  instance_type          = var.ci_master_instance_type
-  subnet_id = var.private_1_subnet_id
+  ami = data.aws_ami.amazon_linux_23.id
+  # availability_zone = "eu-north-1a" # must have subnet in this AZ first#AZ of this ci master must be fixed so if destroy create in same AZ to claim same EBS backup 
 
-  vpc_security_group_ids = [aws_security_group.CI_Master_SG_allow_ssh_from_Bastion_SG_and_allow_8080_from_ALB_SG.id] 
-  key_name               = "ssh-private-key"
-  associate_public_ip_address = false    
+  # instance_type          = "t3.micro"
+  instance_type = var.ci_master_instance_type     # this each time should be in same AZ 1a 
+  subnet_id     = var.list_private_subnets_ids[0] # get the first one each time  # this each time should be in same AZ 1a  and should later take backeup of the ebs in 
+
+  vpc_security_group_ids      = [aws_security_group.CI_Master_SG_allow_ssh_from_Bastion_SG_and_allow_8080_from_ALB_SG.id]
+  key_name                    = "ssh-private-key"
+  associate_public_ip_address = false
 
   # user_data= file("${path.module}/jenkins_master_userdata_setup.sh")                                                                   # create public ip
   # user_data_replace_on_change = true 
@@ -47,11 +47,11 @@ resource "aws_instance" "CI_Master" {
   }
 
   root_block_device {
-    volume_size = 20
-    volume_type = "gp3"
+    volume_size           = 20
+    volume_type           = "gp3"
     delete_on_termination = true # keep the root device to not lose data of jenkins 
-    tags={
-        Name= "jenkins root volume "
+    tags = {
+      Name = "jenkins root volume "
     }
   }
 }
@@ -60,20 +60,29 @@ resource "aws_instance" "CI_Master" {
 
 
 resource "aws_instance" "CI_Agent" {
-  count = var.ci_agent_count
+  count = var.ci_agent_count #create $count number of agents and it will be list called CI_Agent
 
   ami           = data.aws_ami.amazon_linux_23.id
   instance_type = var.ci_agent_instance_type
 
-  subnet_id = var.private_2_subnet_id
+  # subnet_id = [var.list_private_subnets_ids[count.index]  ] # this works if the ec2 = subnet count 
+  subnet_id = element(var.list_private_subnets_ids, count.index)
+
+  # if i have 2 subnets and 4 ec2 
+  # subnet1[] -> ec2-1 , subnet2 -> ec2-2 , subnet1 -> ec2-3 , subnet2 -> ec2-4 and so one or use this 
+
+  #  subnet_id = var.list_private_subnets_ids[
+  #   count.index % length(var.list_private_subnets_ids)
+  # ]
+
 
   vpc_security_group_ids = [
     aws_security_group.CI_Agent_SG_allow_ssh_from_Bastion_SG_and_allow_22_50000_from_Master_SG.id
   ]
 
-  key_name = "ssh-private-key"
-    associate_public_ip_address = false
-    
+  key_name                    = "ssh-private-key"
+  associate_public_ip_address = false
+
 
 
   tags = {
@@ -111,8 +120,8 @@ Host ci-master
   ProxyJump bastion
 
 ${join("\n\n", [
-  for idx, ip in aws_instance.CI_Agent[*].private_ip :
-  <<EOT
+    for idx, ip in aws_instance.CI_Agent[*].private_ip :
+    <<EOT
 Host ci-agent-${idx + 1}
   HostName ${ip}
   User ec2-user
@@ -123,14 +132,14 @@ EOT
 ])}
 CONFIG
 EOF
-  }
+}
 }
 
 
 
 resource "null_resource" "create_inventory_ini" {
 
-  depends_on = [aws_instance.CI_Master,aws_instance.CI_Agent]
+  depends_on = [aws_instance.CI_Master, aws_instance.CI_Agent]
 
   triggers = {
     master = aws_instance.CI_Master.private_ip
@@ -146,8 +155,8 @@ ci-master ansible_host=${aws_instance.CI_Master.private_ip}
 
 [agents]
 ${join("\n", [
-  for idx, ip in aws_instance.CI_Agent[*].private_ip :
-  "ci-agent-${idx + 1} ansible_host=${ip}"
+    for idx, ip in aws_instance.CI_Agent[*].private_ip :
+    "ci-agent-${idx + 1} ansible_host=${ip}"
 ])}
 
 [all:vars]
@@ -157,7 +166,7 @@ ansible_ssh_common_args='-o ProxyJump=bastion'
 CONFIG
 EOF
 
-  }
+}
 }
 
 
