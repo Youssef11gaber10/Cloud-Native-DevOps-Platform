@@ -67,6 +67,10 @@ pipeline {
                 ])        
             steps {
                 dir("${TF_DIR}") {
+                    sh '''
+                    echo "${AWS_ACCESS_KEY_ID}"
+                    echo "${AWS_SECRET_ACCESS_KEY}"
+                    '''
                     sh 'terraform init -backend=true'
                     sh 'terraform validate'
                 }
