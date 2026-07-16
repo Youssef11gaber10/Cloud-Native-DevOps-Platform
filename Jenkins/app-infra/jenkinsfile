@@ -640,15 +640,28 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS',usernameVariable: 'GIT_USERNAME',passwordVariable: 'GIT_PAT')
-                    // string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    // string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
                         set -euo pipefail
 
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                        ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
+                        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
+                        
+                        ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
+                        -o jsonpath='{.data.password}' | base64 -d)
+
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+
+
                         argocd repo add "${GIT_REPO_URL}" \
-                          --username "$GIT_USERNAME" \
-                          --password "$GIT_PAT"
+                            --username "$GIT_USERNAME" \
+                            --password "$GIT_PAT"
                     '''
                 }
             }
@@ -664,12 +677,23 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
-                sh '''
-                    set -euo pipefail
-                    export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
-                    kubectl apply -f Argo-CD/root-app.yml
-                '''
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+
+                    sh '''
+                        set -euo pipefail
+
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                    
+
+                        kubectl apply -f Argo-CD/root-app.yml
+                    '''
+                }
             }
         }
 
@@ -683,14 +707,35 @@ pipeline {
                 }
             }
             steps {
-                unstash 'argocd-lb-address'
-                sh '''
-                    set -euo pipefail
-                    argocd app wait "${ROOT_APP_NAME}" \
-                      --health \
-                      --sync \
-                      --timeout 300
-                '''
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                // unstash 'argocd-lb-address'
+
+                {
+
+
+                    sh '''
+                        set -euo pipefail
+
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                        ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
+                        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
+                        
+                        ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
+                        -o jsonpath='{.data.password}' | base64 -d)
+
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+                        argocd app wait "${ROOT_APP_NAME}" \
+                        --health \
+                        --sync \
+                        --timeout 300
+                    '''
+                }
             }
         }
 
@@ -704,24 +749,50 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
-                unstash 'argocd-lb-address'
-                sh '''
-                    set -euo pipefail
-                    export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                // unstash 'kops-kubeconfig'
+                // unstash 'argocd-lb-address'
+                {
 
-                    echo "== ArgoCD Pods =="
-                    kubectl get pods -n argocd
+                    sh '''
+                        set -euo pipefail
 
-                    echo "== ArgoCD Applications (via kubectl) =="
-                    kubectl get applications -n argocd
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
-                    echo "== ArgoCD Apps (via CLI) =="
-                    argocd app list
+                        ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
+                        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
+                        
+                        ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
+                        -o jsonpath='{.data.password}' | base64 -d)
 
-                    echo "== Root Application detail =="
-                    argocd app get "${ROOT_APP_NAME}"
-                '''
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+                        echo "== ArgoCD Pods =="
+                        kubectl get pods -n argocd
+
+                        echo "== ArgoCD Applications (via kubectl) =="
+                        kubectl get applications -n argocd
+
+                        echo "== ArgoCD Apps (via CLI) =="
+                        argocd app list
+
+                        echo "== Root Application detail =="
+                        argocd app get "${ROOT_APP_NAME}"
+
+                        echo "===== LoadBalancer ====="
+                        kubectl -n argocd get svc argocd-server
+
+                        echo
+                        echo "===== Initial Password ====="
+                        kubectl -n argocd get secret argocd-initial-admin-secret \
+                        -o jsonpath='{.data.password}' | base64 -d
+                        
+                    '''
+                }
             }
         }
     }
