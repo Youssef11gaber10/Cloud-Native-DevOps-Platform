@@ -607,6 +607,8 @@ pipeline {
 
                         argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
+                        echo ${EKS_CLUSTER_NAME}
+                        
                         aws eks update-kubeconfig \
                           --region "${AWS_REGION}" \
                           --name "$EKS_CLUSTER_NAME" \
