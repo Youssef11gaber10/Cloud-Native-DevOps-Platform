@@ -340,11 +340,14 @@ pipeline {
                 }
             }
             steps {
+
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
                     file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
-                ]) {
+                ]) 
+
+                {
                     sh '''
                         set -euo pipefail
 
@@ -373,10 +376,6 @@ pipeline {
 
                     '''
                 }
-                // Kept across the remaining stages: this is the kubeconfig ArgoCD
-                // itself is installed into and how the pipeline talks to it.
-
-                // stash name: 'kops-kubeconfig', includes: 'kops.kubeconfig'
 
             }
         }
@@ -391,15 +390,21 @@ pipeline {
                 }
             }
             steps {
-                // unstash 'kops-kubeconfig'
-                sh '''
-                    set -euo pipefail
 
-                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-                    export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ])
+            {
+                    sh '''
+                        set -euo pipefail
 
-                    kops validate cluster --wait 15m
-                '''
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                        kops validate cluster --wait 15m
+                    '''
+            }
             }
         }
 
@@ -413,22 +418,30 @@ pipeline {
                 }
             }
             steps {
-                sh '''
-                    set -euo pipefail
 
-                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-                    export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ])
+                {
 
-                    helm repo add argo https://argoproj.github.io/argo-helm
-                    helm repo update
+                    sh '''
+                        set -euo pipefail
 
-                    helm upgrade --install argocd argo/argo-cd \
-                      --namespace argocd \
-                      --create-namespace \
-                      --set server.service.type=LoadBalancer \
-                      --wait \
-                      --timeout 10m
-                '''
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                        helm repo add argo https://argoproj.github.io/argo-helm
+                        helm repo update
+
+                        helm upgrade --install argocd argo/argo-cd \
+                        --namespace argocd \
+                        --create-namespace \
+                        --set server.service.type=LoadBalancer \
+                        --wait \
+                        --timeout 10m
+                    '''
+                }
             }
         }
 
@@ -444,15 +457,25 @@ pipeline {
                 }
             }
             steps {
-                sh '''
-                    set -euo pipefail
 
-                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-                    export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ])
 
-                    kubectl -n argocd wait --for=condition=Ready pod \
-                      -l app.kubernetes.io/part-of=argocd --timeout=300s
-                '''
+                {
+                    sh '''
+                        set -euo pipefail
+
+                        kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                        kubectl -n argocd wait --for=condition=Ready pod \
+                        -l app.kubernetes.io/part-of=argocd --timeout=300s
+                    '''
+
+                    
+                }
             }
         }
 
@@ -465,7 +488,16 @@ pipeline {
                     args '-u root'
                 }
             }
+
             steps {
+
+
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ])
+
+            {
                 sh '''
                     set -euo pipefail
 
@@ -491,6 +523,8 @@ pipeline {
 
                     echo "$ADDR" > argocd-lb-address.txt
                 '''
+
+            }
                 stash name: 'argocd-lb-address', includes: 'argocd-lb-address.txt'
             }
         }
