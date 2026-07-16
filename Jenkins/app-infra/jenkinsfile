@@ -215,6 +215,9 @@ pipeline {
                 
                     dir("${TF_DIR_EKS}") {
                         sh '''
+                            set -euo pipefail
+                            echo $AWS_ACCESS_KEY_ID
+                            echo $AWS_SECRET_ACCESS_KEY
                             terraform init -backend=true
                             terraform validate
                         '''
