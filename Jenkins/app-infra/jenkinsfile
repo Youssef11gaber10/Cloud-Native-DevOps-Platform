@@ -366,25 +366,12 @@ pipeline {
                         fi
 
                         kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
-                        sync
-                        sleep 2
-
-                        chmod 644 ${WORKSPACE}/kops.kubeconfig
-
-                        echo "===== FILE ====="
-                        ls -lh ${WORKSPACE}/kops.kubeconfig
-
-                        echo "===== SIZE ====="
-                        wc -c ${WORKSPACE}/kops.kubeconfig
-
-                        echo "===== FIRST LINES ====="
-                        head ${WORKSPACE}/kops.kubeconfig
 
                     '''
                 }
                 // Kept across the remaining stages: this is the kubeconfig ArgoCD
                 // itself is installed into and how the pipeline talks to it.
-                // stash name: 'kops-kubeconfig', includes: '{WORKSPACE}/kops.kubeconfig'
+
                 stash name: 'kops-kubeconfig', includes: 'kops.kubeconfig'
 
             }
