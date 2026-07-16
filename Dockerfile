@@ -40,11 +40,23 @@ RUN curl -fsSLo /usr/local/bin/argocd \
     "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64" && \
     chmod +x /usr/local/bin/argocd
 
+# ---------- Terraform ----------
+ARG TERRAFORM_VERSION=1.15.8
+
+RUN curl -fsSLo terraform.zip \
+    "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" && \
+    unzip terraform.zip && \
+    mv terraform /usr/local/bin/terraform && \
+    chmod +x /usr/local/bin/terraform && \
+    rm -f terraform.zip
     
 # ---------- Sanity check every tool at build time, fail fast if something's broken ----------
+# ---------- Sanity check ----------
 RUN aws --version && \
+    terraform version && \
     kubectl version --client && \
     kops version && \
-    helm version
+    helm version && \
+    argocd version --client
 
 WORKDIR /workspace
