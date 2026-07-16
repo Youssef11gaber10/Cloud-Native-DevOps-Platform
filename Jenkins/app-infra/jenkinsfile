@@ -186,7 +186,8 @@ pipeline {
         // ---------- Step 3: Terraform provisions the EKS cluster ----------
 
         stage('EKS: Terraform Fmt') {
-            agent { docker { 
+            agent { 
+                docker { 
                             image 'hashicorp/terraform:1.15.8'
                             label 'agent-1' 
                             args '--entrypoint=""'
@@ -196,10 +197,12 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ])
+                ]){
                 dir("${TF_DIR_EKS}") {
                     sh 'terraform fmt -check -recursive'
                 }
+
+            }
             }
         }
 
