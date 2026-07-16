@@ -184,7 +184,11 @@ pipeline {
         // =========================================================
 
         // ---------- Step 3: Terraform provisions the EKS cluster ----------
-
+        stage('Cleanup Workspace') {
+                steps {
+                    cleanWs()
+                }
+            }
         stage('EKS: Terraform Fmt') {
             agent { 
                 docker { 
