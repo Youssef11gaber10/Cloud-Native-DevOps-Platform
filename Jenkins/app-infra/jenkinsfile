@@ -343,17 +343,38 @@ pipeline {
                 ]) {
                     sh '''
                         set -euo pipefail
+                        if kops get cluster ${KOPS_CLUSTER_NAME} >/dev/null 2>&1; then
+                            echo "Cluster exists. Updating..."
+                            kops update cluster \
+                            --name ${KOPS_CLUSTER_NAME} \
+                            --yes
+                        else
 
-                        kops create cluster \
-                          --node-count=3 \
-                          --node-size=t3.small \
-                          --zones=${AWS_REGION}a,${AWS_REGION}b,${AWS_REGION}c \
-                          --master-size=t3.small \
-                          --master-zones=${AWS_REGION}a \
-                          --ssh-public-key=${KOPS_PUB_KEY} \
-                          --yes
+                            echo "Creating cluster..."
+                            kops create cluster \
+                            --node-count=3 \
+                            --node-size=t3.small \
+                            --zones=${AWS_REGION}a,${AWS_REGION}b,${AWS_REGION}c \
+                            --master-size=t3.small \
+                            --master-zones=${AWS_REGION}a \
+                            --ssh-public-key=${KOPS_PUB_KEY} \
+                            --yes
 
-                        kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                            kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        fi
+
+                        sync
+                        sleep 2
+
+                        echo "===== FILE ====="
+                        ls -lh ${WORKSPACE}/kops.kubeconfig
+
+                        echo "===== SIZE ====="
+                        wc -c ${WORKSPACE}/kops.kubeconfig
+
+                        echo "===== FIRST LINES ====="
+                        head ${WORKSPACE}/kops.kubeconfig
+
                     '''
                 }
                 // Kept across the remaining stages: this is the kubeconfig ArgoCD
