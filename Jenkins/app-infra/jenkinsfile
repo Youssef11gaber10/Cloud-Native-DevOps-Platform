@@ -40,129 +40,129 @@ pipeline {
 
 
 
-stage('Preflight: Validate Jenkins Configuration') {
-    steps {
-        script {
-            echo "========================================="
-            echo "Checking Jenkins prerequisites..."
-            echo "========================================="
-        }
+        // stage('Preflight: Validate Jenkins Configuration') {
+        //     steps {
+        //         script {
+        //             echo "========================================="
+        //             echo "Checking Jenkins prerequisites..."
+        //             echo "========================================="
+        //         }
 
-        //
-        // AWS Credentials
-        //
-        withCredentials([
-            string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-            string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        ]) {
-            sh '''
-                set -e
+        //         //
+        //         // AWS Credentials
+        //         //
+        //         withCredentials([
+        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+        //         ]) {
+        //             sh '''
+        //                 set -e
 
-                [ -n "$AWS_ACCESS_KEY_ID" ] || { echo "ERROR: AWS_ACCESS_KEY_ID is empty"; exit 1; }
-                [ -n "$AWS_SECRET_ACCESS_KEY" ] || { echo "ERROR: AWS_SECRET_ACCESS_KEY is empty"; exit 1; }
-                aws sts get-caller-identity
+        //                 [ -n "$AWS_ACCESS_KEY_ID" ] || { echo "ERROR: AWS_ACCESS_KEY_ID is empty"; exit 1; }
+        //                 [ -n "$AWS_SECRET_ACCESS_KEY" ] || { echo "ERROR: AWS_SECRET_ACCESS_KEY is empty"; exit 1; }
+        //                 aws sts get-caller-identity
 
-                echo "✓ AWS credentials found"
-            '''
-        }
+        //                 echo "✓ AWS credentials found"
+        //             '''
+        //         }
 
-        //
-        // Kops SSH Public Key
-        //
-        withCredentials([
-            file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
-        ]) {
-            sh '''
-                set -e
+        //         //
+        //         // Kops SSH Public Key
+        //         //
+        //         withCredentials([
+        //             file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
+        //         ]) {
+        //             sh '''
+        //                 set -e
 
-                [ -f "$KOPS_PUB_KEY" ] || {
-                    echo "ERROR: KOPS_SSH_PUBLIC_KEY credential missing"
-                    exit 1
-                }
+        //                 [ -f "$KOPS_PUB_KEY" ] || {
+        //                     echo "ERROR: KOPS_SSH_PUBLIC_KEY credential missing"
+        //                     exit 1
+        //                 }
 
-                echo "✓ Kops SSH public key found"
-            '''
-        }
+        //                 echo "✓ Kops SSH public key found"
+        //             '''
+        //         }
 
-        //
-        // Git credentials (only if PRIVATE_REPO=true)
-        //
-        script {
-            if (params.PRIVATE_REPO) {
+        //         //
+        //         // Git credentials (only if PRIVATE_REPO=true)
+        //         //
+        //         script {
+        //             if (params.PRIVATE_REPO) {
 
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'GIT_REPO_CREDENTIALS',
-                        usernameVariable: 'GIT_USER',
-                        passwordVariable: 'GIT_PAT'
-                    )
-                ]) {
+        //                 withCredentials([
+        //                     usernamePassword(
+        //                         credentialsId: 'GIT_REPO_CREDENTIALS',
+        //                         usernameVariable: 'GIT_USER',
+        //                         passwordVariable: 'GIT_PAT'
+        //                     )
+        //                 ]) {
 
-                    sh '''
-                        set -e
+        //                     sh '''
+        //                         set -e
 
-                        [ -n "$GIT_USER" ] || {
-                            echo "ERROR: Git username missing"
-                            exit 1
-                        }
+        //                         [ -n "$GIT_USER" ] || {
+        //                             echo "ERROR: Git username missing"
+        //                             exit 1
+        //                         }
 
-                        [ -n "$GIT_PAT" ] || {
-                            echo "ERROR: Git PAT missing"
-                            exit 1
-                        }
+        //                         [ -n "$GIT_PAT" ] || {
+        //                             echo "ERROR: Git PAT missing"
+        //                             exit 1
+        //                         }
 
-                        echo "✓ Git credentials found"
-                    '''
-                }
+        //                         echo "✓ Git credentials found"
+        //                     '''
+        //                 }
 
-            } else {
-                echo "✓ Public Git repository - skipping Git credentials check"
-            }
-        }
+        //             } else {
+        //                 echo "✓ Public Git repository - skipping Git credentials check"
+        //             }
+        //         }
 
-        //
-        // Verify required tools on the Jenkins agent
-        //
-        sh '''
-            set -e
+        //         //
+        //         // Verify required tools on the Jenkins agent
+        //         //
+        //         sh '''
+        //             set -e
 
-            echo
-            echo "Checking installed tools..."
+        //             echo
+        //             echo "Checking installed tools..."
 
-            command -v docker >/dev/null || { echo "docker not installed"; exit 1; }
-            command -v git >/dev/null || { echo "git not installed"; exit 1; }
+        //             command -v docker >/dev/null || { echo "docker not installed"; exit 1; }
+        //             command -v git >/dev/null || { echo "git not installed"; exit 1; }
 
-            echo "✓ docker"
-            echo "✓ git"
-        '''
+        //             echo "✓ docker"
+        //             echo "✓ git"
+        //         '''
 
-        //
-        // Verify required directories exist
-        //
-        sh """
-            set -e
+        //         //
+        //         // Verify required directories exist
+        //         //
+        //         sh """
+        //             set -e
 
-            [ -d "${TF_DIR_EKS}" ] || {
-                echo "Terraform directory not found:"
-                echo "${TF_DIR_EKS}"
-                exit 1
-            }
+        //             [ -d "${TF_DIR_EKS}" ] || {
+        //                 echo "Terraform directory not found:"
+        //                 echo "${TF_DIR_EKS}"
+        //                 exit 1
+        //             }
 
-            [ -f "Argo-CD/root-app.yml" ] || {
-                echo "Argo-CD/root-app.yml not found"
-                exit 1
-            }
+        //             [ -f "Argo-CD/root-app.yml" ] || {
+        //                 echo "Argo-CD/root-app.yml not found"
+        //                 exit 1
+        //             }
 
-            echo "✓ Terraform directory exists"
-            echo "✓ root-app.yml exists"
-        """
+        //             echo "✓ Terraform directory exists"
+        //             echo "✓ root-app.yml exists"
+        //         """
 
-        //
-        // Verify Docker image exists
-        //
+        //         //
+        //         // Verify Docker image exists
+        //         //
 
-    }
-}
+        //     }
+        // }
 
 
 
@@ -197,94 +197,99 @@ stage('Preflight: Validate Jenkins Configuration') {
         //             sh 'terraform fmt -check -recursive'
         //         }
         //     }
-    //     // }
-    //     stage('EKS: Terraform Validate') {
-    //         agent { docker { ... } }     
-    //         withCredentials([
-    //                 string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-    //                 string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
-    //             ])        
-    //         steps {
-    //             dir("${TF_DIR}") {
-    //                 sh '''
-    //                     echo "${AWS_ACCESS_KEY_ID}"
-    //                     echo "${AWS_SECRET_ACCESS_KEY}"
-    //                     aws sts get-caller-identity
-    //                     terraform init -backend=true
-    //                     terraform validate
-    //                 '''
-    //             }
-    //         }
-    //     }
+        // }
+        stage('EKS: Terraform Validate') {
+            agent { docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+                ])        
+            steps {
+                dir("${TF_DIR}") {
+                    sh '''
+                        echo "${AWS_ACCESS_KEY_ID}"
+                        echo "${AWS_SECRET_ACCESS_KEY}"
+                        aws sts get-caller-identity
+                        terraform init -backend=true
+                        terraform validate
+                    '''
+                }
+            }
+        }
 
-    //     stage('EKS: Terraform Plan') {
-    //         agent { docker { 
-    //                         image 'hashicorp/terraform:1.15.8'
-    //                         label 'agent-1' 
-    //                         args '--entrypoint=""'
-    //                         } 
-    //         }
-    //         steps {
-    //             dir("${TF_DIR_EKS}") {
-    //                 sh 'terraform plan -out=tfplan'
-    //             }
-    //             stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan"
-    //         }
-    //     }
+        stage('EKS: Terraform Plan') {
+            agent { docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            steps {
+                dir("${TF_DIR_EKS}") {
+                    sh 'terraform plan -out=tfplan'
+                }
+                stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan"
+            }
+        }
 
-    //     // ---------- Step 5: first manual approval (before touching real infra) ----------
-    //     stage('EKS: Manual Approval') {
-    //         steps {
-    //             input message: "Review the EKS plan output above. Approve apply to PRODUCTION eks-cluster?", ok: 'Apply'
-    //         }
-    //     }
+        // ---------- Step 5: first manual approval (before touching real infra) ----------
+        stage('EKS: Manual Approval') {
+            steps {
+                input message: "Review the EKS plan output above. Approve apply to PRODUCTION eks-cluster?", ok: 'Apply'
+            }
+        }
 
-    //     stage('EKS: Terraform Apply') {
-    //         agent { docker { 
-    //                         image 'hashicorp/terraform:1.15.8'
-    //                         label 'agent-1' 
-    //                         args '--entrypoint=""'
-    //                         } 
-    //         }
-    //         steps {
-    //             unstash 'tfplan-eks'
-    //             dir("${TF_DIR_EKS}") {
-    //                 sh 'terraform apply -auto-approve tfplan'
-    //             }
-    //         }
-    //     }
+        stage('EKS: Terraform Apply') {
+            agent { docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            steps {
+                unstash 'tfplan-eks'
+                dir("${TF_DIR_EKS}") {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
 
-    //     // ---------- Step 4: capture Terraform outputs ----------
-    //     // Cluster name/endpoint are needed later for `aws eks update-kubeconfig` and
-    //     // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
-    //     stage('EKS: Capture Terraform Outputs') {
-    //         agent { docker { 
-    //                         image 'hashicorp/terraform:1.15.8'
-    //                         label 'agent-1' 
-    //                         args '--entrypoint=""'
-    //                         } 
-    //         }
-    //         steps {
-    //             dir("${TF_DIR_EKS}") {
-    //                 sh '''
-    //                     set -euo pipefail
-    //                     terraform init -backend=true -input=false
-    //                     {
-    //                       echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
-    //                       echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
-    //                     } > eks-outputs.env
-    //                 '''
-    //             }
-    //             stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
-    //         }
-    //     }
+        // ---------- Step 4: capture Terraform outputs ----------
+        // Cluster name/endpoint are needed later for `aws eks update-kubeconfig` and
+        // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
+        stage('EKS: Capture Terraform Outputs') {
+            agent { docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            steps {
+                dir("${TF_DIR_EKS}") {
+                    sh '''
+                        set -euo pipefail
+                        terraform init -backend=true -input=false
+                        {
+                          echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
+                          echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
+                        } > eks-outputs.env
+                    '''
+                }
+                stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
+            }
+        }
 
-    //     // ---------- Step 7: second manual approval, before creating the kops cluster ----------
-    //     stage('Argo: Manual Approval') {
-    //         steps {
-    //             input message: "Approve creation of Argo kops cluster (${KOPS_CLUSTER_NAME})?", ok: 'Create'
-    //         }
-    //     }
+        // ---------- Step 7: second manual approval, before creating the kops cluster ----------
+        stage('Argo: Manual Approval') {
+            steps {
+                input message: "Approve creation of Argo kops cluster (${KOPS_CLUSTER_NAME})?", ok: 'Create'
+            }
+        }
 
 
     //     // ---------- Step 8: create the kops cluster ----------
