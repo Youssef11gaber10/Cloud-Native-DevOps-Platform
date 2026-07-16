@@ -376,7 +376,7 @@ pipeline {
                 // Kept across the remaining stages: this is the kubeconfig ArgoCD
                 // itself is installed into and how the pipeline talks to it.
 
-                stash name: 'kops-kubeconfig', includes: 'kops.kubeconfig'
+                // stash name: 'kops-kubeconfig', includes: 'kops.kubeconfig'
 
             }
         }
@@ -394,7 +394,10 @@ pipeline {
                 unstash 'kops-kubeconfig'
                 sh '''
                     set -euo pipefail
+
+                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                     export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
                     kops validate cluster --wait 15m
                 '''
             }
@@ -410,9 +413,10 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
                 sh '''
                     set -euo pipefail
+
+                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                     export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
                     helm repo add argo https://argoproj.github.io/argo-helm
