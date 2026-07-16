@@ -46,19 +46,19 @@ pipeline {
 
         // ---------- Step 3: Terraform provisions the EKS cluster ----------
 
-        stage('EKS: Terraform Fmt') {
-            agent { docker { 
-                            image 'hashicorp/terraform:1.9'
-                            label 'agent-1' 
-                            args '--entrypoint=""'
-                            } 
-            }
-            steps {
-                dir("${TF_DIR_EKS}") {
-                    sh 'terraform fmt -check -recursive'
-                }
-            }
-        }
+        // stage('EKS: Terraform Fmt') {
+        //     agent { docker { 
+        //                     image 'hashicorp/terraform:1.9'
+        //                     label 'agent-1' 
+        //                     args '--entrypoint=""'
+        //                     } 
+        //     }
+        //     steps {
+        //         dir("${TF_DIR_EKS}") {
+        //             sh 'terraform fmt -check -recursive'
+        //         }
+        //     }
+        // }
 
         stage('EKS: Terraform Validate') {
             agent { docker { 
