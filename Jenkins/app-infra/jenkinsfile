@@ -639,7 +639,7 @@ pipeline {
             }
             steps {
                 withCredentials([
-                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS',usernameVariable: 'GIT_USERNAME',passwordVariable: 'GIT_PAT')
+                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS',usernameVariable: 'GIT_USERNAME',passwordVariable: 'GIT_PAT'),
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
@@ -790,7 +790,7 @@ pipeline {
                         echo "===== Initial Password ====="
                         kubectl -n argocd get secret argocd-initial-admin-secret \
                         -o jsonpath='{.data.password}' | base64 -d
-                        
+
                     '''
                 }
             }
