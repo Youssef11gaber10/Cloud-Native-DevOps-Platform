@@ -1,0 +1,63 @@
+pipeline {
+    agent { label "agent-1" }
+
+    environment {
+        TF_DIR = "terraform/eks-cluster"   // and a second stage set for argo-cluster
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    // Deliberately NO `triggers { }` block and NO webhook enabled on this job —
+    // this pipeline only ever runs when a human clicks "Build Now".
+    // There is no ACTION parameter at all — this Jenkinsfile can only ever apply, never destroy.
+
+    stages {
+
+        stage('Terraform Fmt') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform fmt -check -recursive'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform init -backend=true'
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform plan -out=tfplan'
+                }
+                stash name: 'tfplan-eks', includes: "${TF_DIR}/tfplan"
+            }
+        }
+
+        stage('Manual Approval') {
+            steps {
+                input message: "Review the plan output above. Approve apply to PRODUCTION eks-cluster?", ok: 'Apply'
+            }
+        }
+
+        stage('Terraform Apply') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                unstash 'tfplan-eks'
+                dir("${TF_DIR}") {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+    }
+}

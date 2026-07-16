@@ -83,19 +83,19 @@ module "helm-external-secret-operator" {
   depends_on = [ module.access-to-cluster ]
 }
 
-module "helm_kube_prometheus_stack_operator" {
-  source = "./modules/Helm_addons_module/kube_prometheus_stack_operator"
-  grafana_admin_password = var.grafana_admin_password
-  depends_on = [ module.access-to-cluster ] 
-}
+# module "helm_kube_prometheus_stack_operator" {
+#   source = "./modules/Helm_addons_module/kube_prometheus_stack_operator"
+#   grafana_admin_password = var.grafana_admin_password
+#   depends_on = [ module.access-to-cluster ] 
+# }
 
-module "helm_ELK_stack" {
-  source = "./modules/Helm_addons_module/ELK_Stack"
-  depends_on = [ module.access-to-cluster ]
-}
+# module "helm_ELK_stack" {
+#   source = "./modules/Helm_addons_module/ELK_Stack"
+#   depends_on = [ module.access-to-cluster ]
+# }
 
-module "create_namespaces" {
-  source = "./modules/cluster-namespaces_module"
-  # cluster_name = var.cluster_name
-  depends_on = [ module.access-to-cluster ]
-}
+# module "create_namespaces" {
+#   source = "./modules/cluster-namespaces_module"
+#   # cluster_name = var.cluster_name
+#   depends_on = [ module.access-to-cluster ]
+# }

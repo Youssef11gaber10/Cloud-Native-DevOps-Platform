@@ -3,6 +3,7 @@
   hosts: master
   become: true
   tasks:
+
     - name: Update all packages
       yum:
         name: "*"
@@ -13,50 +14,39 @@
         key: https://yum.corretto.aws/corretto.key
         state: present
 
-    - name: Add Corretto yum repo 
+    - name: Add Corretto yum repo
       get_url:
         url: https://yum.corretto.aws/corretto.repo
         dest: /etc/yum.repos.d/corretto.repo
 
-    - name: Install Java 21 (Amazon Corretto) and git
+    - name: Install Java 21 (Amazon Corretto), git, amazon-efs-utils
       yum:
         name:
           - java-21-amazon-corretto
           - git
+          - amazon-efs-utils
         state: present
-
 
     - name: Add Jenkins repo
       get_url:
         url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
         dest: /etc/yum.repos.d/jenkins.repo
 
-
     - name: Import Jenkins GPG key
       rpm_key:
         key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
         state: present
-
-
 
     - name: Install Jenkins
       yum:
         name: jenkins
         state: present
 
-    - name: Ensure /var/lib/jenkins 
-      file:
-        path: /var/lib/jenkins
-        state: directory
-        owner: jenkins
-        group: jenkins
-        recurse: true
-
-    - name: Enable and start Jenkins
+    - name: Enable and start Jenkins (on local disk for now - EFS mounted in a later play)
       systemd:
         name: jenkins
         enabled: true
-        state: restarted
+        state: started
 
     - name: Wait for Jenkins HTTP endpoint
       uri:
@@ -66,27 +56,3 @@
       retries: 30
       delay: 5
       until: jenkins_status.status == 200
-
-    - name: Check if this is a first-time install (initialAdminPassword file exists)
-      stat:
-        path: /var/lib/jenkins/secrets/initialAdminPassword
-      register: admin_pw_file
-
-    - name: Read initial admin password (first run only)
-      slurp:
-        src: /var/lib/jenkins/secrets/initialAdminPassword
-      register: jenkins_admin_pw
-      when: admin_pw_file.stat.exists
-
-
-    - name: Show initial admin password (use this in the setup wizard)
-      debug:
-        msg: "Jenkins initial admin password: {{ jenkins_admin_pw.content | b64decode | trim }}"
-      when: admin_pw_file.stat.exists
-
-
-
-    - name: Note for restored volumes (Jenkins already configured previously)
-      debug:
-        msg: "No initialAdminPassword file found - this volume already has an existing Jenkins config. Log in with your previous admin credentials."
-      when: not admin_pw_file.stat.exists

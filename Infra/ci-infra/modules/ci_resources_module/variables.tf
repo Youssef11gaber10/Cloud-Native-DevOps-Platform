@@ -30,6 +30,10 @@ variable "list_private_subnets_ids" {
   type = list(string)
 }
 
+variable "dict_private_subnets" {
+  type= map(any)
+}
+
 #   list_public_subnets_ids_ALB = [
 #     aws_subnet.public_subnet_1.id,
 #     aws_subnet.public_subnet_2.id,

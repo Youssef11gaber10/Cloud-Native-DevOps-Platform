@@ -1,0 +1,72 @@
+pipeline {
+    agent { label "agent-1" }
+
+    parameters {
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Terraform action to run')
+    }
+
+    environment {
+        TF_DIR = "terraform/dev-cluster"
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    stages {
+
+        stage('Terraform Fmt') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform fmt -check -recursive'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform init -backend=true'
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                dir("${TF_DIR}") {
+                    script {
+                        if (params.ACTION == 'destroy') {
+                            sh 'terraform plan -destroy -out=tfplan'
+                        } else {
+                            sh 'terraform plan -out=tfplan'
+                        }
+                    }
+                }
+                stash name: 'tfplan', includes: "${TF_DIR}/tfplan"
+            }
+        }
+
+        stage('Manual Approval for Destroy') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                input message: "Confirm DESTROY of dev-cluster? This is irreversible.", ok: 'Destroy it'
+            }
+        }
+
+        stage('Terraform Apply/Destroy') {
+            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            steps {
+                unstash 'tfplan'
+                dir("${TF_DIR}") {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+    }
+}

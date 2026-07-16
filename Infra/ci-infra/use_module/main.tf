@@ -23,4 +23,6 @@ module "ci-resources" {
     for subnet in values(module.network.NM_private_subnets) :
     subnet.id
   ]
+
+  dict_private_subnets = module.network.NM_private_subnets
 }
