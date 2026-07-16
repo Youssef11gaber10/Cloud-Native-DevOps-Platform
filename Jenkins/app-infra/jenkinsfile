@@ -265,9 +265,9 @@ pipeline {
 
         stage('EKS: Terraform Apply') {
             agent { docker { 
-                            image 'hashicorp/terraform:1.15.8'
+                            image "${DEVOPS_IMAGE}"
                             label 'agent-1' 
-                            args '--entrypoint=""'
+                            args '-u root'
                             } 
             }
             steps {
