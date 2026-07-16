@@ -350,6 +350,7 @@ pipeline {
                             kops update cluster \
                             --name ${KOPS_CLUSTER_NAME} \
                             --yes
+
                         else
 
                             echo "Creating cluster..."
@@ -362,9 +363,9 @@ pipeline {
                             --ssh-public-key=${KOPS_PUB_KEY} \
                             --yes
 
-                            kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
                         fi
 
+                        kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
                         sync
                         sleep 2
 
@@ -383,8 +384,8 @@ pipeline {
                 }
                 // Kept across the remaining stages: this is the kubeconfig ArgoCD
                 // itself is installed into and how the pipeline talks to it.
-                // stash name: 'kops-kubeconfig', includes: '{WORKSPACE}/kops.kubeconfig'
-                stash name: 'kops-kubeconfig',includes: "${WORKSPACE}/kops.kubeconfig", useDefaultExcludes: false
+                stash name: 'kops-kubeconfig', includes: '{WORKSPACE}/kops.kubeconfig'
+
             }
         }
 
