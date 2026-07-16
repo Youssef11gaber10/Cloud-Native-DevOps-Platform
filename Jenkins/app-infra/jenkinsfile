@@ -444,10 +444,12 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
                 sh '''
                     set -euo pipefail
+
+                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                     export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
                     kubectl -n argocd wait --for=condition=Ready pod \
                       -l app.kubernetes.io/part-of=argocd --timeout=300s
                 '''
@@ -464,9 +466,10 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
                 sh '''
                     set -euo pipefail
+
+                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                     export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
                     ADDR=""
@@ -502,10 +505,11 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
                 unstash 'argocd-lb-address'
                 sh '''
                     set -euo pipefail
+                    
+                    kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                     export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
                     ARGOCD_HOST=$(cat argocd-lb-address.txt)
