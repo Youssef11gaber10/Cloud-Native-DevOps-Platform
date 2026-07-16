@@ -60,7 +60,7 @@ stage('Preflight: Validate Jenkins Configuration') {
 
                 [ -n "$AWS_ACCESS_KEY_ID" ] || { echo "ERROR: AWS_ACCESS_KEY_ID is empty"; exit 1; }
                 [ -n "$AWS_SECRET_ACCESS_KEY" ] || { echo "ERROR: AWS_SECRET_ACCESS_KEY is empty"; exit 1; }
-                sts get-caller-identity
+                aws sts get-caller-identity
 
                 echo "✓ AWS credentials found"
             '''
