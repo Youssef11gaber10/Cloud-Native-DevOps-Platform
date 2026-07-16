@@ -215,10 +215,6 @@ pipeline {
                 
                     dir("${TF_DIR_EKS}") {
                         sh '''
-                            set -euo pipefail
-
-                            aws sts get-caller-identity
-
                             terraform init -backend=true
                             terraform validate
                         '''
