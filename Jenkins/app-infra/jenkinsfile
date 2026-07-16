@@ -47,7 +47,11 @@ pipeline {
         // ---------- Step 3: Terraform provisions the EKS cluster ----------
 
         stage('EKS: Terraform Fmt') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            agent { docker { 
+                            image 'hashicorp/terraform:1.9'
+                            label 'agent-1' 
+                            } 
+            }
             steps {
                 dir("${TF_DIR_EKS}") {
                     sh 'terraform fmt -check -recursive'
@@ -56,7 +60,11 @@ pipeline {
         }
 
         stage('EKS: Terraform Validate') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            agent { docker { 
+                            image 'hashicorp/terraform:1.9'
+                            label 'agent-1' 
+                            } 
+            }            
             steps {
                 dir("${TF_DIR_EKS}") {
                     sh 'terraform init -backend=true'
@@ -66,7 +74,11 @@ pipeline {
         }
 
         stage('EKS: Terraform Plan') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            agent { docker { 
+                            image 'hashicorp/terraform:1.9'
+                            label 'agent-1' 
+                            } 
+            }
             steps {
                 dir("${TF_DIR_EKS}") {
                     sh 'terraform plan -out=tfplan'
@@ -83,7 +95,11 @@ pipeline {
         }
 
         stage('EKS: Terraform Apply') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            agent { docker { 
+                            image 'hashicorp/terraform:1.9'
+                            label 'agent-1' 
+                            } 
+            }
             steps {
                 unstash 'tfplan-eks'
                 dir("${TF_DIR_EKS}") {
@@ -96,7 +112,11 @@ pipeline {
         // Cluster name/endpoint are needed later for `aws eks update-kubeconfig` and
         // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
         stage('EKS: Capture Terraform Outputs') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+            agent { docker { 
+                            image 'hashicorp/terraform:1.9'
+                            label 'agent-1' 
+                            } 
+            }
             steps {
                 dir("${TF_DIR_EKS}") {
                     sh '''
