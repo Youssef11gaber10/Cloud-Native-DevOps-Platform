@@ -345,10 +345,8 @@ pipeline {
                         set -euo pipefail
                         echo "$KOPS_STATE_STORE"
                         echo "$KOPS_CLUSTER_NAME"
-
-                        export KOPS_STATE_STORE="s3://${KOPS_STATE_STORE}"
-                        export KOPS_CLUSTER_NAME="${KOPS_CLUSTER_NAME}"
-                        export AWS_REGION="${AWS_REGION}"
+                        echo "$AWS_REGION"
+                        echo "$KOPS_PUB_KEY"
 
                         if kops get cluster ${KOPS_CLUSTER_NAME} >/dev/null 2>&1; then
                             echo "Cluster exists. Updating..."
