@@ -471,7 +471,8 @@ pipeline {
                         export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
                         kubectl -n argocd wait --for=condition=Ready pod \
-                        -l app.kubernetes.io/part-of=argocd --timeout=300s
+                        -l app.kubernetes.io/part-of=argocd,app.kubernetes.io/component!=redis-secret-init \
+                        --timeout=300s
                     '''
 
                     
