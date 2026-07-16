@@ -547,6 +547,7 @@ pipeline {
                     
                     sh '''
                         set -euo pipefail
+                        YOUSSEF_GABER="youssef.gaber@us.ibm.com"
 
                         kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                         export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
@@ -591,6 +592,8 @@ pipeline {
                         set -euo pipefail
                         . "${TF_DIR_EKS}/eks-outputs.env"
 
+                        echo "${YOUSSEF_GABER}"
+
                         kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                         export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
@@ -608,9 +611,9 @@ pipeline {
                         argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
                         echo ${EKS_CLUSTER_NAME}
-                        
+
                         aws eks update-kubeconfig \
-                          --region "${AWS_REGION}" \
+                          --region "eu-north-1" \
                           --name "$EKS_CLUSTER_NAME" \
                           --kubeconfig eks.kubeconfig
 
