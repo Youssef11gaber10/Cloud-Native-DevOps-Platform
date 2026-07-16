@@ -82,7 +82,12 @@ resource "aws_instance" "CI_Agent" {
 
   key_name                    = "ssh-private-key"
   associate_public_ip_address = false
+  root_block_device {
+    volume_size           = 20
+    volume_type           = "gp3"
+    delete_on_termination = true # keep the root device to not lose data of jenkins 
 
+  }
 
 
   tags = {
@@ -171,12 +176,16 @@ EOF
 
 
 resource "null_resource" "run_ansible" {
+  triggers = {
+    agents  = join(",", aws_instance.CI_Agent[*].private_ip)
+  }
 
   depends_on = [
     aws_instance.CI_Agent,
     aws_instance.CI_Master,
     aws_instance.ec2_bastion_host_ci_vpc,
     null_resource.create_inventory_ini,
+    null_resource.update_ssh_config
   ]
 
   provisioner "local-exec" {
