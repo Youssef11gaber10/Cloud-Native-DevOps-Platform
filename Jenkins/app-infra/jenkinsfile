@@ -391,7 +391,7 @@ pipeline {
                 }
             }
             steps {
-                unstash 'kops-kubeconfig'
+                // unstash 'kops-kubeconfig'
                 sh '''
                     set -euo pipefail
 
@@ -508,7 +508,7 @@ pipeline {
                 unstash 'argocd-lb-address'
                 sh '''
                     set -euo pipefail
-                    
+
                     kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
                     export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
