@@ -48,7 +48,7 @@ pipeline {
 
         // stage('EKS: Terraform Fmt') {
         //     agent { docker { 
-        //                     image 'hashicorp/terraform:1.9'
+        //                     image 'hashicorp/terraform:1.15.8'
         //                     label 'agent-1' 
         //                     args '--entrypoint=""'
         //                     } 
@@ -62,7 +62,7 @@ pipeline {
 
         stage('EKS: Terraform Validate') {
             agent { docker { 
-                            image 'hashicorp/terraform:1.9'
+                            image 'hashicorp/terraform:1.15.8'
                             label 'agent-1' 
                             args '--entrypoint=""'
                             } 
@@ -77,7 +77,7 @@ pipeline {
 
         stage('EKS: Terraform Plan') {
             agent { docker { 
-                            image 'hashicorp/terraform:1.9'
+                            image 'hashicorp/terraform:1.15.8'
                             label 'agent-1' 
                             args '--entrypoint=""'
                             } 
@@ -99,7 +99,7 @@ pipeline {
 
         stage('EKS: Terraform Apply') {
             agent { docker { 
-                            image 'hashicorp/terraform:1.9'
+                            image 'hashicorp/terraform:1.15.8'
                             label 'agent-1' 
                             args '--entrypoint=""'
                             } 
@@ -117,7 +117,7 @@ pipeline {
         // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
         stage('EKS: Capture Terraform Outputs') {
             agent { docker { 
-                            image 'hashicorp/terraform:1.9'
+                            image 'hashicorp/terraform:1.15.8'
                             label 'agent-1' 
                             args '--entrypoint=""'
                             } 
