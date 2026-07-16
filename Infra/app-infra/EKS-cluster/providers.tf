@@ -14,7 +14,7 @@ terraform {
 
 #run time configuration for provider 
 provider "aws" {
-  region  = var.region
+  region = var.region
   # profile = "youssef-aws" # you can put this profile name in env variables AWS_PROFILE and  put this env varialbe here if you don't want expose your profile name
 }
 
