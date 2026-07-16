@@ -1,11 +1,11 @@
 
 resource "helm_release" "external_secrets" {
 
-  name             = "external-secrets"
-  repository       = "https://charts.external-secrets.io"
+  name       = "external-secrets"
+  repository = "https://charts.external-secrets.io"
 
-  chart            = "external-secrets"
-  namespace        = "external-secrets"
+  chart     = "external-secrets"
+  namespace = "external-secrets"
 
   # version          = "0.9.13" # v1beta
   # version = "0.14.4" # let him pull the latest version

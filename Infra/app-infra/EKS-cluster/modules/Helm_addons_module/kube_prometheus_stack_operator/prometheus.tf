@@ -11,12 +11,12 @@ resource "helm_release" "helm_kube_prometheus_stack_operator" {
 
   # This is the -f values.yaml equivalent
   values = [
-    file("${path.module}/values.yml")   # put values.yaml next to this .tf file
+    file("${path.module}/values.yml") # put values.yaml next to this .tf file
   ]
 
   # You can still override specific values on top of the file
   set {
     name  = "grafana.adminPassword"
-    value = var.grafana_admin_password   # don't hardcode passwords
+    value = var.grafana_admin_password # don't hardcode passwords
   }
 }

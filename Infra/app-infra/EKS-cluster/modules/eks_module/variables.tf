@@ -1,8 +1,8 @@
 variable "vpc_id" { # take it from network module in main.tf
-  type = string 
+  type = string
 }
 variable "cluster_name" {
-    type = string
+  type = string
 }
 variable "cluster_version" {
   type = string

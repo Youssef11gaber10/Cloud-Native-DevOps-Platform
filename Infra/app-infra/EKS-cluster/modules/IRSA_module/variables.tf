@@ -11,7 +11,7 @@ variable "oidc_provider_arn" {
 }
 
 variable "kube-system_namespace" {
-  type = string
+  type    = string
   default = "kube-system"
 }
 
@@ -28,7 +28,7 @@ variable "serviceaccount_name_external_dns" {
   type = string
 }
 variable "external-dns_namespace" {
-  type = string
+  type    = string
   default = "external-dns"
 }
 
@@ -36,6 +36,6 @@ variable "serviceaccount_name_external_secrets" {
   type = string
 }
 variable "external-secrets_namespace" {
-  type = string
+  type    = string
   default = "external-secrets"
 }

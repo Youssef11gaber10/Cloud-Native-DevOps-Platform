@@ -23,14 +23,14 @@ resource "helm_release" "external_dns" {
   #   value = "sync"
   # }
   set {
-  name  = "policy"
-  value = "upsert-only"
-}
+    name  = "policy"
+    value = "upsert-only"
+  }
 
   # Filter to only manage records in YOUR domain — very important in prod
   set {
     name  = "domainFilters[0]"
-    value = "mycloudlab.website"       # replace with your actual domain
+    value = "mycloudlab.website" # replace with your actual domain
   }
 
   # Only manage records that ExternalDNS itself created (safe default)

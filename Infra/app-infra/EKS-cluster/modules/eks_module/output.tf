@@ -16,5 +16,5 @@ output "cluster_certificate_authority_data" {
 
 output "cluster_name" {
   value = aws_eks_cluster.eks_cluster.name
-  
+
 }

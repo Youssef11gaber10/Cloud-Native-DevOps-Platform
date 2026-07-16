@@ -31,13 +31,13 @@ resource "aws_route_table" "private_route_table_cluster_vpc" {
 # add routes 
 resource "aws_route" "public_route_cluster_vpc" {
   route_table_id         = aws_route_table.public_route_table_cluster_vpc.id # associate this route with public RT 
-  destination_cidr_block = "0.0.0.0/0"                                              # src
+  destination_cidr_block = "0.0.0.0/0"                                       # src
   gateway_id             = aws_internet_gateway.igw_cluster_vpc.id           # dst
 }
 
 resource "aws_route" "private_route_cluster_vpc" {
-  route_table_id         = aws_route_table.private_route_table_cluster_vpc.id            # associate this route with private RT
-  destination_cidr_block = "0.0.0.0/0"                                                # src
+  route_table_id         = aws_route_table.private_route_table_cluster_vpc.id   # associate this route with private RT
+  destination_cidr_block = "0.0.0.0/0"                                          # src
   nat_gateway_id         = aws_nat_gateway.natGW_private_subnets_cluster_vpc.id # dst
   depends_on             = [aws_nat_gateway.natGW_private_subnets_cluster_vpc]  # make sure natGW is created before adding route
 }
@@ -46,18 +46,18 @@ resource "aws_route" "private_route_cluster_vpc" {
 
 resource "aws_route_table_association" "private_subnet_association_cluster_vpc" {
   # subnet_id      = aws_subnet.private_subnet_terraform_lab1_vpc.id # private subnet
-  count =3 # -> 0,1,2
+  count = 3 # -> 0,1,2
   # subnet_id      = aws_subnet.subnet_terraform_lab1_vpc[count.index].id
-  subnet_id      = aws_subnet.cluster_subnets["private_subnet_${count.index+1}"].id # [0,1] +1 -> private-subnet-1, private-subnet-2
-  route_table_id = aws_route_table.private_route_table_cluster_vpc.id # private RT
+  subnet_id      = aws_subnet.cluster_subnets["private_subnet_${count.index + 1}"].id # [0,1] +1 -> private-subnet-1, private-subnet-2
+  route_table_id = aws_route_table.private_route_table_cluster_vpc.id                 # private RT
 }
 
 resource "aws_route_table_association" "public_subnet_association_cluster_vpc" {
   # subnet_id      = aws_subnet.public_subnet_terraform_lab1_vpc.id           # public subnet
   count = 3 #-> 2,3 -> must add +2
   # subnet_id      = aws_subnet.subnet_terraform_lab1_vpc[count.index+2].id # -> (0,1) +2-> 2,3
-  subnet_id = aws_subnet.cluster_subnets["public_subnet_${count.index+1}"].id # [0,1] +1 -> public-subnet-1, public-subnet-2
-  route_table_id = aws_route_table.public_route_table_cluster_vpc.id # public RT
+  subnet_id      = aws_subnet.cluster_subnets["public_subnet_${count.index + 1}"].id # [0,1] +1 -> public-subnet-1, public-subnet-2
+  route_table_id = aws_route_table.public_route_table_cluster_vpc.id                 # public RT
 }
 
 
@@ -71,5 +71,5 @@ resource "aws_route_table_association" "public_subnet_association_cluster_vpc" {
 
 #   subnet_id      = aws_subnet.subnet_terraform_lab1_vpc[count.index].id # first 2subnet are private and other 2 are public
 #   route_table_id = aws_route_table.public_route_table_terraform_lab1_vpc.id #  first 2subnet with private RT and other 2 subnet with public RT
-  
+
 # }

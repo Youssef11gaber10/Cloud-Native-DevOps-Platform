@@ -1,10 +1,10 @@
 variable "names_of_users_cluster_admins" {
   type = list(object({
-      user_name = string
-      user_account_id = string
-      cluster_name = string
+    user_name       = string
+    user_account_id = string
+    cluster_name    = string
   }))
-  
+
 }
 
 

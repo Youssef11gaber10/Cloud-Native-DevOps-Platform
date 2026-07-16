@@ -1,5 +1,5 @@
 variable "serviceaccount_name_alb_ingress" {
-  
+
   type = string
 }
 
@@ -16,5 +16,5 @@ variable "region" {
 }
 
 variable "vpc_id" {
-    type = string
+  type = string
 }
