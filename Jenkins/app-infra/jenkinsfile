@@ -133,7 +133,7 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
-                    file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY_PATH')
+                    file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
                 ]) {
                     sh '''
                         set -euo pipefail
@@ -141,10 +141,10 @@ pipeline {
                         kops create cluster \
                           --node-count=3 \
                           --node-size=t3.small \
-                          --zones=eu-north-1a,eu-north-1b,eu-north-1c \
+                          --zones=${AWS_REGION}a,${AWS_REGION}b,${AWS_REGION}c \
                           --master-size=t3.small \
-                          --master-zones=eu-north-1a,eu-north-1b,eu-north-1c \
-                          --ssh-public-key=${KOPS_PUB_KEY_PATH} \
+                          --master-zones=${AWS_REGION}a \
+                          --ssh-public-key=${KOPS_PUB_KEY} \
                           --yes
 
                         kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
