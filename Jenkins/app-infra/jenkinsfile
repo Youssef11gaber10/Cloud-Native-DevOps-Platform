@@ -638,16 +638,14 @@ pipeline {
                 }
             }
             steps {
-                unstash 'argocd-lb-address'
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'GIT_REPO_CREDENTIALS',
-                        usernameVariable: 'GIT_USERNAME',
-                        passwordVariable: 'GIT_PAT'
-                    )
+                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS',usernameVariable: 'GIT_USERNAME',passwordVariable: 'GIT_PAT')
+                    // string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    // string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sh '''
                         set -euo pipefail
+
                         argocd repo add "${GIT_REPO_URL}" \
                           --username "$GIT_USERNAME" \
                           --password "$GIT_PAT"
