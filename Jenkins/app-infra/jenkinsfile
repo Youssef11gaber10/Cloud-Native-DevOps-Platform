@@ -197,12 +197,14 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]){
+                ])
+            {
                 dir("${TF_DIR_EKS}") {
                     sh 'terraform fmt -check -recursive'
                 }
 
             }
+
             }
         }
 
@@ -218,7 +220,8 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
+                ]) 
+                {
                 
                     dir("${TF_DIR_EKS}") {
                         sh '''
@@ -239,10 +242,17 @@ pipeline {
                             } 
             }
             steps {
-                dir("${TF_DIR_EKS}") {
-                    sh 'terraform plan -out=tfplan'
+                                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+                    dir("${TF_DIR_EKS}") {
+                        sh 'terraform plan -out=tfplan'
+                    }
+                    stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan"
+
                 }
-                stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan"
             }
         }
 
@@ -261,9 +271,16 @@ pipeline {
                             } 
             }
             steps {
-                unstash 'tfplan-eks'
-                dir("${TF_DIR_EKS}") {
-                    sh 'terraform apply -auto-approve tfplan'
+
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+                    unstash 'tfplan-eks'
+                    dir("${TF_DIR_EKS}") {
+                        sh 'terraform apply -auto-approve tfplan'
+                    }
                 }
             }
         }
@@ -279,17 +296,25 @@ pipeline {
                             } 
             }
             steps {
-                dir("${TF_DIR_EKS}") {
-                    sh '''
-                        set -euo pipefail
-                        terraform init -backend=true -input=false
-                        {
-                          echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
-                          echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
-                        } > eks-outputs.env
-                    '''
+
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+                    dir("${TF_DIR_EKS}") {
+                        sh '''
+                            set -euo pipefail
+                            terraform init -backend=true -input=false
+                            {
+                            echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
+                            echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
+                            } > eks-outputs.env
+                        '''
+                    }
+                    stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
+
                 }
-                stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
             }
         }
 
