@@ -63,7 +63,7 @@ module "helm-alb" {
   cluster_name                    = var.cluster_name
   region                          = var.region
   vpc_id                          = module.cluster-vpc.NM_vpc_id
-  depends_on                      = [module.access-to-cluster]
+  depends_on                      = [module.access-to-cluster, module.Helm-ebs-csi]
 }
 
 module "helm-external-dns-operator" {
@@ -72,7 +72,7 @@ module "helm-external-dns-operator" {
   cluster_name                     = var.cluster_name
   serviceaccount_name_external_dns = "external-dns-sa"
   external_dns_IRSA_arn            = module.IRSA.external_dns_IRSA_arn
-  depends_on                       = [module.access-to-cluster]
+  depends_on                       = [module.access-to-cluster, module.helm-alb, module.Helm-ebs-csi]
 
 }
 
@@ -80,7 +80,7 @@ module "helm-external-secret-operator" {
   source                                = "./modules/Helm_addons_module/External_secret_operator_module"
   external_secrets_service_account_name = "external-secrets-sa"
   external_secrets_IRSA_arn             = module.IRSA.external_secrets_IRSA_arn
-  depends_on                            = [module.access-to-cluster]
+  depends_on                            = [module.access-to-cluster,module.Helm-ebs-csi, module.helm-alb, module.helm-external-dns-operator]
 }
 
 # module "helm_kube_prometheus_stack_operator" {
