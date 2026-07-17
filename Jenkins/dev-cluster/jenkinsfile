@@ -12,7 +12,10 @@ pipeline {
     environment {
         DEVOPS_IMAGE          = "youssef11gaber10/kops:latest"
         KOPS_CLUSTER_NAME     = 'kops-dev'
+        KOPS_ARGO_CLUSTER_NAME= 'kops-argo'
         KOPS_STATE_STORE      = 's3://kops-dev-cluster-state-s3'
+        KOPS_ARGO_STATE_STORE = 's3://kops-argo-cluster-state-s3'
+
         AWS_REGION_KOPS       = 'eu-central-1'
     }
 
@@ -302,11 +305,11 @@ pipeline {
 
                     echo "==> Register the dev cluster with ArgoCD"
                     KUBECONFIG=./dev.kubeconfig argocd cluster add "$DEV_CONTEXT" \
-                        --name "${ARGOCD_DEV_CLUSTER_NAME}" \
+                        --name "${KOPS_CLUSTER_NAME}" \
                         --yes
 
                     rm -f ./dev.kubeconfig
-                    echo "Dev cluster '${ARGOCD_DEV_CLUSTER_NAME}' registered with ArgoCD."
+                    echo "Dev cluster '${KOPS_CLUSTER_NAME}' registered with ArgoCD."
                 '''
             }
         }
@@ -338,7 +341,7 @@ pipeline {
                     argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
                     echo "==> Deregister the dev cluster from ArgoCD (safe no-op if already gone)"
-                    argocd cluster rm "${ARGOCD_DEV_CLUSTER_NAME}" || echo "Cluster ${ARGOCD_DEV_CLUSTER_NAME} was not registered, nothing to remove."
+                    argocd cluster rm "${KOPS_CLUSTER_NAME}" || echo "Cluster ${KOPS_CLUSTER_NAME} was not registered, nothing to remove."
                 '''
             }
         }
