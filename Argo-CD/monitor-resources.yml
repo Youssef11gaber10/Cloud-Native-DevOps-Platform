@@ -13,7 +13,7 @@ spec:
     targetRevision: main  
 
   destination: # eks cluster
-    server: https://ECBBC17AA569A95022111B1B04E0F955.gr7.eu-north-1.eks.amazonaws.com
+    server: eks-prod-cluster
     namespace: argocd
 
 
