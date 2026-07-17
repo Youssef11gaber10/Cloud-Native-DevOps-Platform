@@ -275,10 +275,8 @@ pipeline {
                         # the kops file already generated from previous stage 
                         #export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
-
-                        kubectl config get-contexts
-                        kubectl config current-context
-
+                        cat ~/.kube/config
+                        
                         kops validate cluster --wait 15m
                     '''
             }
