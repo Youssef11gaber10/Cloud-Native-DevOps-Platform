@@ -419,14 +419,13 @@ pipeline {
                         set -euo pipefail
                         pwd 
                         ls -lR
-]
                         ls -lah argocd.env || true
                         cat argocd.env || true
 
 
                         kops export kubeconfig --admin 
 
-                        source ./argocd.env 
+                        source "./argocd.env" 
                         echo "ARGOCD_PASSWORD: $ARGOCD_PASSWORD"
                         echo "ARGOCD_HOST: $ARGOCD_HOST"
 
@@ -467,7 +466,7 @@ pipeline {
 
 
                         source "${TF_DIR_EKS}/eks-outputs.env" # this export the EKS_CLUSTER_NAME & EKS_API_SERVER as env variables
-                        source argocd.env
+                        source "./argocd.env"
 
 
 
