@@ -39,7 +39,10 @@ pipeline {
 
         stage('Cleanup Workspace') {
                 steps {
-                    cleanWs()
+                    cleanWs(            
+                        deleteDirs: true,
+                        disableDeferredWipeout: true
+                        )
                 }
             }
         stage('test passing env & stach ') {
@@ -88,6 +91,18 @@ pipeline {
             }
         }
 
+        stage('Cleanup Before Unstash') {
+            steps {
+                cleanWs(
+                    deleteDirs: true,
+                    disableDeferredWipeout: true
+                )
+
+                sh 'echo "===== Workspace after cleanup ====="'
+                sh 'pwd'
+                sh 'ls -lah'
+            }
+        }
 
         stage('recieve  env & stach ') {
             agent { 
