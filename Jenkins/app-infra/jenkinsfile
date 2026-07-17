@@ -389,6 +389,7 @@ pipeline {
                     -o jsonpath='{.data.password}' | base64 -d)
 
                     printf 'ARGOCD_HOST=%s\nARGOCD_PASSWORD=%s\n' "$ADDR" "$ARGOCD_PASSWORD" > argocd.env
+                    cat argocd.env
 
                     ''' 
 
@@ -416,10 +417,16 @@ pipeline {
                     
                     sh '''
                         set -euo pipefail
+                        pwd 
+                        ls -lR
+
+                        ls -lah argocd.env || true
+                        cat argocd.env || true
+
 
                         kops export kubeconfig --admin 
 
-                        source argocd.env 
+                        . argocd.env 
                         echo "ARGOCD_PASSWORD: $ARGOCD_PASSWORD"
                         echo "ARGOCD_HOST: $ARGOCD_HOST"
 
