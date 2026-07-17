@@ -281,7 +281,7 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) 
                 {
-                    unstash 'tfplan-eks'
+                    // unstash 'tfplan-eks'
                     dir("${TF_DIR_EKS}") {
                         sh 'terraform apply -auto-approve tfplan'
                     }

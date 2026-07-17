@@ -9,7 +9,7 @@ terraform {
 
 
     region       = "eu-north-1"
-    # profile      = "youssef-aws"
+    profile      = "youssef-aws"
     use_lockfile = true #instead of dyanmodb_table cause use s3 to lock state file 
   }
 }
