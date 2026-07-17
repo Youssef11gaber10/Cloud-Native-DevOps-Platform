@@ -84,21 +84,7 @@ pipeline {
             }
         }
 
-        stage('Cleanup Before Unstash workspace 1') {
-            // here you not use docker image so will clean the workspace the 1
 
-            steps {
-                cleanWs(
-                    deleteDirs: true,
-                    disableDeferredWipeout: true
-                )
-
-                sh 'echo "===== Workspace after cleanup ====="'
-                sh 'echo "WORKSPACE:   ${WORKSPACE}"'
-                sh 'pwd'
-                sh 'ls -lah'
-            }
-        }
 
         stage('Cleanup Before Unstash workspace 2') {
             // here you not use docker image so will clean the workspace the 2
@@ -144,6 +130,7 @@ pipeline {
                 sh "ls -lR"
                 sh 'echo "==========try to unstash the files from stage 1 to stage 2 =========="'
                 unstash 'gaber1'
+                unstash 'gaber2'
                 sh 'ls -lR'
                 sh 'cat gaber-out.txt'
 
@@ -151,7 +138,6 @@ pipeline {
                     sh 'echo "========== cd to ${TF_DIR_EKS} =========="'
                     sh 'echo "==========try to unstash the files from stage 1 to stage 2 inside ${TF_DIR_EKS} =========="'
 
-                    unstash 'gaber2'
 
                     sh "ls -lR"
                     sh 'cat gaber-in.txt'
