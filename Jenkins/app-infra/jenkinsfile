@@ -246,6 +246,9 @@ pipeline {
 
                         # kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
                         kops export kubeconfig --admin  
+                        kubectl get nodes 
+                        cat ${WORKSPACE}/kops.kubeconfig || true
+                        cat ~/.kube/config || true
                         # make it at ~/.kube/config use it directly without export it will be at ${WORKSPACE} and this will bind mount to each container each time 
                     '''
                 }
