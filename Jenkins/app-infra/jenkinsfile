@@ -425,7 +425,7 @@ pipeline {
 
                         kops export kubeconfig --admin 
 
-                        source "./argocd.env" 
+                        . "./argocd.env" 
                         echo "ARGOCD_PASSWORD: $ARGOCD_PASSWORD"
                         echo "ARGOCD_HOST: $ARGOCD_HOST"
 
@@ -514,7 +514,7 @@ pipeline {
                         kops export kubeconfig --admin 
 
 
-                        source argocd.env
+                        . "./argocd.env"
 
                         argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
@@ -577,7 +577,7 @@ pipeline {
                         set -euo pipefail
                         kops export kubeconfig --admin 
 
-                        source argocd.env
+                        . "./argocd.env"
 
                         argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
@@ -612,7 +612,7 @@ pipeline {
                         set -euo pipefail
                         kops export kubeconfig --admin 
 
-                        source argocd.env
+                        . "./argocd.env"
 
                         argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
