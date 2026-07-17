@@ -233,5 +233,124 @@ pipeline {
                 }
             }
         }
+
+
+        stage('ArgoCD: Fetch Login Info') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+
+                        KOPS_STATE_STORE=${KOPS_ARGO_STATE_STORE} kops export kubeconfig --name "${KOPS_ARGO_CLUSTER_NAME}" --admin --kubeconfig ./argo.kubeconfig
+                        export KUBECONFIG=./argo.kubeconfig
+
+                        ADDR=""
+                        for i in $(seq 1 30); do
+                            ADDR=$(kubectl -n argocd get svc argocd-server \
+                                -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+                            [ -n "$ADDR" ] && break
+                            sleep 10
+                        done
+                        [ -n "$ADDR" ] || { echo "ERROR: could not fetch ArgoCD LoadBalancer address" >&2; exit 1; }
+
+                        ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
+                            -o jsonpath='{.data.password}' | base64 -d)
+
+                        printf 'ARGOCD_HOST=%s\nARGOCD_PASSWORD=%s\n' "$ADDR" "$ARGOCD_PASSWORD" > argocd.env
+                    '''
+                }
+            }
+        }
+
+
+        stage('ArgoCD: Register Dev Cluster') {
+        when {
+            expression { params.ACTION == 'apply' }
+        }
+        agent {
+            docker {
+                image "${DEVOPS_IMAGE}"
+                label 'agent-1'
+                args '-u root'
+            }
+        }
+        steps {
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ]) {
+                sh '''
+                    set -euo pipefail
+
+                    echo "==> Export DEV cluster kubeconfig - this is the cluster argocd cluster add will register"
+                    kops export kubeconfig --name "${KOPS_CLUSTER_NAME}" --admin --kubeconfig ./dev.kubeconfig
+                    DEV_CONTEXT=$(KUBECONFIG=./dev.kubeconfig kubectl config current-context)
+
+                    echo "==> Log in to the ArgoCD API server (running on the Argo cluster's LoadBalancer)"
+                    . "./argocd.env"
+                    argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+                    echo "==> Register the dev cluster with ArgoCD"
+                    KUBECONFIG=./dev.kubeconfig argocd cluster add "$DEV_CONTEXT" \
+                        --name "${ARGOCD_DEV_CLUSTER_NAME}" \
+                        --yes
+
+                    rm -f ./dev.kubeconfig
+                    echo "Dev cluster '${ARGOCD_DEV_CLUSTER_NAME}' registered with ArgoCD."
+                '''
+            }
+        }
+    }
+
+
+
+        stage('ArgoCD: Deregister Dev Cluster') {
+        when {
+            expression { params.ACTION == 'destroy' }
+        }
+        agent {
+            docker {
+                image "${DEVOPS_IMAGE}"
+                label 'agent-1'
+                args '-u root'
+            }
+        }
+        steps {
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ]) {
+                sh '''
+                    set -euo pipefail
+
+                    echo "==> Log in to the ArgoCD API server"
+                    . "./argocd.env"
+                    argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+                    echo "==> Deregister the dev cluster from ArgoCD (safe no-op if already gone)"
+                    argocd cluster rm "${ARGOCD_DEV_CLUSTER_NAME}" || echo "Cluster ${ARGOCD_DEV_CLUSTER_NAME} was not registered, nothing to remove."
+                '''
+            }
+        }
+    }   
+
+
+
+
+
+
+
+
+
     }
 }
