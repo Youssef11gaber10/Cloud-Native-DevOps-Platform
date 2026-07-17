@@ -37,14 +37,7 @@ pipeline {
 
     stages {
 
-        stage('Cleanup Workspace') {
-                steps {
-                    cleanWs(            
-                        deleteDirs: true,
-                        disableDeferredWipeout: true
-                        )
-                }
-            }
+
         stage('test passing env & stach ') {
             agent { 
                 docker { 
@@ -91,7 +84,9 @@ pipeline {
             }
         }
 
-        stage('Cleanup Before Unstash') {
+        stage('Cleanup Before Unstash workspace 1') {
+            // here you not use docker image so will clean the workspace the 1
+
             steps {
                 cleanWs(
                     deleteDirs: true,
@@ -99,6 +94,29 @@ pipeline {
                 )
 
                 sh 'echo "===== Workspace after cleanup ====="'
+                sh 'echo "WORKSPACE:   ${WORKSPACE}"'
+                sh 'pwd'
+                sh 'ls -lah'
+            }
+        }
+
+        stage('Cleanup Before Unstash workspace 2') {
+            // here you not use docker image so will clean the workspace the 2
+            agent { 
+                docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            steps {
+                cleanWs(
+                    deleteDirs: true,
+                    disableDeferredWipeout: true
+                )
+
+                sh 'echo "===== Workspace after cleanup ====="'
+                sh 'echo "WORKSPACE:   ${WORKSPACE}"'
                 sh 'pwd'
                 sh 'ls -lah'
             }
