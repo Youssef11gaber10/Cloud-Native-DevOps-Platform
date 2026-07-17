@@ -368,27 +368,6 @@ pipeline {
             ])
 
             {
-                // sh '''
-                //     set -euo pipefail
-
-                //     ADDR=""
-                //     for i in $(seq 1 60); do
-                //       ADDR=$(kubectl -n argocd get svc argocd-server \
-                //         -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-                //       if [ -n "$ADDR" ]; then
-                //         echo "argocd-server external address is ready: $ADDR"
-                //         break
-                //       fi
-                //       echo "  [$i/60] argocd-server LoadBalancer not assigned yet, retrying in 10s..."
-                //       sleep 10
-                //     done
-
-                //     if [ -z "$ADDR" ]; then
-                //       echo "ERROR: timed out waiting for argocd-server LoadBalancer external hostname/IP" >&2
-                //       exit 1
-                //     fi
-
-                // '''
 
                 sh '''
                     set -euo pipefail
@@ -399,11 +378,11 @@ pipeline {
 
                     ADDR=""
                     for i in $(seq 1 60); do
-                    ADDR=$(kubectl -n argocd get svc argocd-server \
-                        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+                        ADDR=$(kubectl -n argocd get svc argocd-server \
+                            -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 
-                    [ -n "$ADDR" ] && break
-                    sleep 10
+                        [ -n "$ADDR" ] && break
+                        sleep 10
                     done
 
                     ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
