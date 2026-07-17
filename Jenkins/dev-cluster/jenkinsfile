@@ -2,69 +2,234 @@ pipeline {
     agent { label "agent-1" }
 
     parameters {
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Terraform action to run')
+        choice(
+            name: 'ACTION',
+            choices: ['apply', 'destroy'],
+            description: 'apply = create/update the dev kops cluster. destroy = tear it down (requires approval).'
+        )
     }
 
     environment {
-        TF_DIR = "terraform/dev-cluster"
+        DEVOPS_IMAGE          = "youssef11gaber10/kops:latest"
+        KOPS_CLUSTER_NAME     = 'kops-dev'
+        KOPS_STATE_STORE      = 's3://kops-dev-cluster-state-s3'
+        AWS_REGION_KOPS       = 'eu-central-1'
     }
 
     options {
         disableConcurrentBuilds()
     }
 
+
     stages {
 
-        stage('Terraform Fmt') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+        stage('Cleanup Workspace') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
             steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform fmt -check -recursive'
+                cleanWs(
+                    deleteDirs: true,
+                    disableDeferredWipeout: true
+                )
+                sh 'echo "===== Workspace after cleanup ====="'
+                sh 'pwd'
+                sh 'ls -lah'
+            }
+        }
+
+        stage('Pre-check: AWS + state store reachable') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+
+                        echo "==> Pre-check: AWS credentials valid"
+                        aws sts get-caller-identity >/dev/null
+
+                        echo "==> Pre-check: kops state store bucket reachable"
+                        BUCKET=$(echo ${KOPS_STATE_STORE} | sed 's|s3://||')
+                        aws s3api head-bucket --bucket "$BUCKET" \
+                            || { echo "ERROR: cannot reach kops state store bucket ${KOPS_STATE_STORE}" >&2; exit 1; }
+                    '''
                 }
             }
         }
 
-        stage('Terraform Validate') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
-            steps {
-                dir("${TF_DIR}") {
-                    sh 'terraform init -backend=true'
-                    sh 'terraform validate'
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
-            steps {
-                dir("${TF_DIR}") {
-                    script {
-                        if (params.ACTION == 'destroy') {
-                            sh 'terraform plan -destroy -out=tfplan'
-                        } else {
-                            sh 'terraform plan -out=tfplan'
-                        }
-                    }
-                }
-                stash name: 'tfplan', includes: "${TF_DIR}/tfplan"
-            }
-        }
-
+        // ---------- Manual approval, only required for destroy ----------
         stage('Manual Approval for Destroy') {
             when {
                 expression { params.ACTION == 'destroy' }
             }
             steps {
-                input message: "Confirm DESTROY of dev-cluster? This is irreversible.", ok: 'Destroy it'
+                input message: "Confirm DESTROY of dev kops cluster '${KOPS_CLUSTER_NAME}'? This is irreversible.", ok: 'Destroy it'
             }
         }
 
-        stage('Terraform Apply/Destroy') {
-            agent { docker { image 'hashicorp/terraform:1.9', label 'agent-1' } }
+        // ---------- APPLY: create the cluster if it doesn't exist, update it if it does ----------
+        stage('Kops: Create/Update Cluster') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
             steps {
-                unstash 'tfplan'
-                dir("${TF_DIR}") {
-                    sh 'terraform apply -auto-approve tfplan'
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+
+                        [ -s "${KOPS_PUB_KEY}" ] || { echo "ERROR: SSH public key credential is empty or missing" >&2; exit 1; }
+
+                        if kops get cluster --name "${KOPS_CLUSTER_NAME}" >/dev/null 2>&1; then
+                            echo "Cluster ${KOPS_CLUSTER_NAME} already exists — updating..."
+                            kops update cluster --name "${KOPS_CLUSTER_NAME}" --yes
+                        else
+                            echo "Creating cluster ${KOPS_CLUSTER_NAME}..."
+                            kops create cluster \
+                              --name="${KOPS_CLUSTER_NAME}" \
+                              --node-count=3 \
+                              --node-size=t3.small \
+                              --zones=${AWS_REGION_KOPS}a,${AWS_REGION_KOPS}b,${AWS_REGION_KOPS}c \
+                              --master-size=t3.small \
+                              --master-zones=${AWS_REGION_KOPS}a \
+                              --ssh-public-key=${KOPS_PUB_KEY} \
+                              --yes
+                        fi
+
+                        kops export kubeconfig --admin
+                        kubectl config current-context
+                    '''
+                }
+            }
+        }
+
+        stage('Kops: Wait For Cluster Healthy') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+                        kops export kubeconfig --admin
+                        kops validate cluster --wait 15m
+                    '''
+                }
+            }
+        }
+
+        stage('Kops: Verify Cluster (apply)') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+                        kops export kubeconfig --admin
+
+                        echo "== Nodes =="
+                        kubectl get nodes -o wide
+
+                        echo "== Cluster info =="
+                        kubectl cluster-info
+                    '''
+                }
+            }
+        }
+
+        // ---------- DESTROY: tear down the cluster (after approval above) ----------
+        stage('Kops: Pre-check cluster exists (destroy)') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+                        if ! kops get cluster --name "${KOPS_CLUSTER_NAME}" >/dev/null 2>&1; then
+                            echo "ERROR: cluster ${KOPS_CLUSTER_NAME} does not exist in ${KOPS_STATE_STORE} — nothing to destroy." >&2
+                            exit 1
+                        fi
+                        echo "Confirmed cluster ${KOPS_CLUSTER_NAME} exists — proceeding to destroy."
+                    '''
+                }
+            }
+        }
+
+        stage('Kops: Delete Cluster') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+                        kops delete cluster --name "${KOPS_CLUSTER_NAME}" --yes
+                    '''
                 }
             }
         }
