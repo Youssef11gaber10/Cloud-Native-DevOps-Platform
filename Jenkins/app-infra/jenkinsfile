@@ -24,9 +24,6 @@ pipeline {
         AWS_REGION_KOPS        = 'eu-central-1'
         ARGOCD_EKS_CLUSTER_NAME = 'eks-prod-cluster'
         ROOT_APP_NAME     = 'root-app'
-        ARGOCD_HOST       = ''
-        ARGOCD_PASSWORD   = ''
-        TEST_ENV          = ''
 
     }
 
@@ -37,8 +34,31 @@ pipeline {
 
     stages {
 
+        stage('Cleanup Before Unstash workspace 1') 
+        {      
+            agent { 
+                docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            steps { 
 
-        stage('test passing env & stach ') {
+                cleanWs(                    
+                        deleteDirs: true,                    
+                        disableDeferredWipeout: true                
+                        )
+
+                sh 'echo "===== Workspace after cleanup ====="'      
+                sh 'echo "WORKSPACE:   ${WORKSPACE}"'     
+                sh 'pwd'         
+                sh 'ls -lah'      
+                }        
+
+        }
+        
+        stage('EKS: Terraform Fmt') {
             agent { 
                 docker { 
                             image 'hashicorp/terraform:1.15.8'
@@ -52,63 +72,16 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ])
             {
-                script {
-                    env.TEST_ENV = "THIS IS TEST ENV VARIABLE PASS FROM STAGE 1"
-                }
-                sh 'echo "==============stage 1=============="'
-                sh 'echo "==============the env variable we set=============="'
-                sh 'echo "$TEST_ENV"'
-
-                sh 'echo "========== work space files =========="'
-                sh 'pwd'
-                sh 'ls -lR'
-                sh 'echo "this is test file want pass to anothe stage " >> gaber-out.txt '
-                sh 'ls -lah '
-                sh 'cat gaber-out.txt'
-
                 dir("${TF_DIR_EKS}") {
-                    sh 'echo "========== cd to ${TF_DIR_EKS} =========="'
-                    sh 'ls -lR'
-                    sh 'pwd'
-                    sh 'echo "this is test file want pass to anothe stage " >> gaber-in.txt '
-                    sh 'ls -lah '
-                    sh 'cat gaber-in.txt'
+                    sh 'terraform fmt -check -recursive'
                 }
 
             }
 
-            stash name: 'gaber1', includes: "gaber-out.txt"
-            stash name: 'gaber2', includes: "${TF_DIR_EKS}/gaber-in.txt"
-
-
             }
         }
 
-
-
-        stage('Cleanup Before Unstash workspace 2') {
-            // here you not use docker image so will clean the workspace the 2
-            agent { 
-                docker { 
-                            image 'hashicorp/terraform:1.15.8'
-                            label 'agent-1' 
-                            args '--entrypoint=""'
-                            } 
-            }
-            steps {
-                cleanWs(
-                    deleteDirs: true,
-                    disableDeferredWipeout: true
-                )
-
-                sh 'echo "===== Workspace after cleanup ====="'
-                sh 'echo "WORKSPACE:   ${WORKSPACE}"'
-                sh 'pwd'
-                sh 'ls -lah'
-            }
-        }
-
-        stage('recieve  env & stach ') {
+        stage('EKS: Terraform Validate') {
             agent { 
                 docker { 
                             image 'hashicorp/terraform:1.15.8'
@@ -120,255 +93,192 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ])
-            {
-                sh 'echo "==============stage 2=============="'
-                sh 'echo "==============print the env variable we set in stage 1 to stage 2 its global evn variable ==============="'
-                sh 'echo "$TEST_ENV"'
-                sh 'echo "============== work space files =========="'
-                sh 'pwd'
-                sh "ls -lR"
-                sh 'echo "==========try to unstash the files from stage 1 to stage 2 =========="'
-                unstash 'gaber1'
-                unstash 'gaber2'
-                sh 'ls -lR'
-                sh 'cat gaber-out.txt'
-
-                dir("${TF_DIR_EKS}") {
-                    sh 'echo "========== cd to ${TF_DIR_EKS} =========="'
-                    sh 'echo "==========try to unstash the files from stage 1 to stage 2 inside ${TF_DIR_EKS} =========="'
-
-
-                    sh "ls -lR"
-                    sh 'cat gaber-in.txt'
-                }
-
-            }
-
-            }
-        }
-
-
-        // stage('EKS: Terraform Fmt') {
-        //     agent { 
-        //         docker { 
-        //                     image 'hashicorp/terraform:1.15.8'
-        //                     label 'agent-1' 
-        //                     args '--entrypoint=""'
-        //                     } 
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ])
-        //     {
-        //         dir("${TF_DIR_EKS}") {
-        //             sh 'terraform fmt -check -recursive'
-        //         }
-
-        //     }
-
-        //     }
-        // }
-
-        // stage('EKS: Terraform Validate') {
-        //     agent { 
-        //         docker { 
-        //                     image 'hashicorp/terraform:1.15.8'
-        //                     label 'agent-1' 
-        //                     args '--entrypoint=""'
-        //                     } 
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         {
+                ]) 
+                {
                 
-        //             dir("${TF_DIR_EKS}") {
-        //                 sh '''
-        //                     terraform init -backend=true
-        //                     terraform validate
-        //                 '''
-        //             }
+                    dir("${TF_DIR_EKS}") {
+                        sh '''
+                            terraform init -backend=true
+                            terraform validate
+                        '''
+                    }
 
-        //         }
-        //     }
-        // }
+                }
+            }
+        }
 
-        // stage('EKS: Terraform Plan') {
-        //     agent { docker { 
-        //                     image "${DEVOPS_IMAGE}"
-        //                     label 'agent-1' 
-        //                     args '-u root'
-        //                     } 
-        //     }
-        //     steps {
-        //                         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         {
-        //             dir("${TF_DIR_EKS}") {
-        //                 sh 'terraform plan -out=tfplan'
-        //                 sh 'cat tfplan'
-        //             }
-        //             stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan"
+        stage('EKS: Terraform Plan') {
+            agent { docker { 
+                            image "${DEVOPS_IMAGE}"
+                            label 'agent-1' 
+                            args '-u root'
+                            } 
+            }
+            steps {
+                                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+                    dir("${TF_DIR_EKS}") {
+                        sh 'terraform plan -out=tfplan'
+                        sh 'cat tfplan'
+                    }
+                    // stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan" # no need to stash tfplan it already remain in workspace of container to next stage
 
-        //         }
-        //     }
-        // }
+                }
+            }
+        }
 
-        // // ---------- Step 5: first manual approval (before touching real infra) ----------
-        // stage('EKS: Manual Approval') {
-        //     steps {
-        //         input message: "Review the EKS plan output above. Approve apply to PRODUCTION eks-cluster?", ok: 'Apply'
-        //     }
-        // }
+        // ---------- Step 5: first manual approval (before touching real infra) ----------
+        stage('EKS: Manual Approval') {
+            steps {
+                input message: "Review the EKS plan output above. Approve apply to PRODUCTION eks-cluster?", ok: 'Apply'
+            }
+        }
 
-        // stage('EKS: Terraform Apply') {
-        //     agent { docker { 
-        //                     image "${DEVOPS_IMAGE}"
-        //                     label 'agent-1' 
-        //                     args '-u root'
-        //                     } 
-        //     }
-        //     steps {
+        stage('EKS: Terraform Apply') {
+            agent { docker { 
+                            image "${DEVOPS_IMAGE}"
+                            label 'agent-1' 
+                            args '-u root'
+                            } 
+            }
+            steps {
 
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         {
-        //             unstash 'tfplan-eks'
-        //             dir("${TF_DIR_EKS}") {
-                        
-        //                 sh 'terraform apply -auto-approve tfplan'
-        //             }
-        //         }
-        //     }
-        // }
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+                    unstash 'tfplan-eks'
+                    dir("${TF_DIR_EKS}") {
+                        sh 'ls -lah tfplan'
+                        sh 'cat tfplan'
+                        sh 'terraform apply -auto-approve tfplan'
+                    }
+                }
+            }
+        }
 
-        // // ---------- Step 4: capture Terraform outputs ----------
-        // // Cluster name/endpoint are needed later for `aws eks update-kubeconfig` and
-        // // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
-        // stage('EKS: Capture Terraform Outputs') {
-        //     agent { docker { 
-        //                     image 'hashicorp/terraform:1.15.8'
-        //                     label 'agent-1' 
-        //                     args '--entrypoint=""'
-        //                     } 
-        //     }
-        //     steps {
+        // ---------- Step 4: capture Terraform outputs ----------
+        // Cluster name/endpoint are needed later for `aws eks update-kubeconfig` and
+        // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
+        stage('EKS: Capture Terraform Outputs') {
+            agent { docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
+            }
+            steps {
 
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         {
-        //             dir("${TF_DIR_EKS}") {
-        //                 sh '''
-        //                     set -euo pipefail
-        //                     terraform init -backend=true -input=false
-        //                     {
-        //                     echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
-        //                     echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
-        //                     } > eks-outputs.env
-        //                 '''
-        //             }
-        //             stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
+                    dir("${TF_DIR_EKS}") {
+                        sh '''
+                            set -euo pipefail
+                            terraform init -backend=true -input=false
+                            {
+                            echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
+                            echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
+                            } > eks-outputs.env
+                        '''
+                    }
+                    // stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
+                    // no need to stash eks-outputs.env it already remain in workspace of container to next stage
 
-        //         }
-        //     }
-        // }
+                }
+            }
+        }
 
-        // // ---------- Step 7: second manual approval, before creating the kops cluster ----------
-        // stage('Argo: Manual Approval') {
-        //     steps {
-        //         input message: "Approve creation of Argo kops cluster (${KOPS_CLUSTER_NAME})?", ok: 'Create'
-        //     }
-        // }
-
-
-        // // ---------- Step 8: create the kops cluster ----------
-        // stage('Argo: Kops Create Cluster') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}" // pull the image first time and later it will be on agent-1 so don't change the agent
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
-
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
-        //             file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
-        //         ]) 
-
-        //         {
-        //             sh '''
-        //                 set -euo pipefail
+        // ---------- Step 7: second manual approval, before creating the kops cluster ----------
+        stage('Argo: Manual Approval') {
+            steps {
+                input message: "Approve creation of Argo kops cluster (${KOPS_CLUSTER_NAME})?", ok: 'Create'
+            }
+        }
 
 
-        //                 if kops get clusters >/dev/null 2>&1; then
-        //                     echo "Cluster exists. Updating..."
-        //                     kops update cluster \
-        //                     --name ${KOPS_CLUSTER_NAME} \
-        //                     --yes
+        // ---------- Step 8: create the kops cluster ----------
+        stage('Argo: Kops Create Cluster') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}" // pull the image first time and later it will be on agent-1 so don't change the agent
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
 
-        //                 else
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    file(credentialsId: 'KOPS_SSH_PUBLIC_KEY', variable: 'KOPS_PUB_KEY')
+                ]) 
 
-        //                     echo "Creating cluster..."
-        //                     kops create cluster \
-        //                     --node-count=3 \
-        //                     --node-size=t3.small \
-        //                     --zones=${AWS_REGION}a,${AWS_REGION}b,${AWS_REGION}c \
-        //                     --master-size=t3.small \
-        //                     --master-zones=${AWS_REGION}a \
-        //                     --ssh-public-key=${KOPS_PUB_KEY} \
-        //                     --yes
+                {
+                    sh '''
+                        set -euo pipefail
 
-        //                 fi
 
-        //                 kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
+                        if kops get clusters >/dev/null 2>&1; then
+                            echo "Cluster exists. Updating..."
+                            kops update cluster \
+                            --name ${KOPS_CLUSTER_NAME} \
+                            --yes
 
-        //             '''
-        //         }
+                        else
 
-        //     }
-        // }
+                            echo "Creating cluster..."
+                            kops create cluster \
+                            --node-count=3 \
+                            --node-size=t3.small \
+                            --zones=${AWS_REGION_KOPS}a,${AWS_REGION_KOPS}b,${AWS_REGION_KOPS}c \
+                            --master-size=t3.small \
+                            --master-zones=${AWS_REGION_KOPS}a \
+                            --ssh-public-key=${KOPS_PUB_KEY} \
+                            --yes
 
-        // // ---------- Step 9: wait until the kops cluster is healthy ----------
-        // stage('Argo: Wait For Kops Cluster Healthy') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
+                        fi
 
-        //         withCredentials([
-        //         string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //         string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //     ])
-        //     {
-        //             sh '''
-        //                 set -euo pipefail
+                        kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
 
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                    '''
+                }
 
-        //                 kops validate cluster --wait 15m
-        //             '''
-        //     }
-        //     }
-        // }
+            }
+        }
+
+        // ---------- Step 9: wait until the kops cluster is healthy ----------
+        stage('Argo: Wait For Kops Cluster Healthy') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+
+                withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ])
+            {
+                    sh '''
+                        set -euo pipefail
+                        # the kops file already generated from previous stage 
+                        export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+                        kops validate cluster --wait 15m
+                    '''
+            }
+            }
+        }
 
         // // ---------- Step 10-11: install ArgoCD via Helm, Service = LoadBalancer ----------
         // stage('ArgoCD: Install via Helm') {
