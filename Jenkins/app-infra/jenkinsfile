@@ -271,9 +271,13 @@ pipeline {
             {
                     sh '''
                         set -euo pipefail
-                        
+
                         # the kops file already generated from previous stage 
                         #export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+
+
+                        kubectl config get-contexts
+                        kubectl config current-context
 
                         kops validate cluster --wait 15m
                     '''
@@ -281,392 +285,367 @@ pipeline {
             }
         }
 
-        // // ---------- Step 10-11: install ArgoCD via Helm, Service = LoadBalancer ----------
-        // stage('ArgoCD: Install via Helm') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
+        // ---------- Step 10-11: install ArgoCD via Helm, Service = LoadBalancer ----------
+        stage('ArgoCD: Install via Helm') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
 
-        //     withCredentials([
-        //         string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //         string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //     ])
-        //         {
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ])
+                {
 
-        //             sh '''
-        //                 set -euo pipefail
+                    sh '''
+                        set -euo pipefail
 
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
-        //                 helm repo add argo https://argoproj.github.io/argo-helm
-        //                 helm repo update
+                        helm repo add argo https://argoproj.github.io/argo-helm
+                        helm repo update
 
-        //                 helm upgrade --install argocd argo/argo-cd \
-        //                 --namespace argocd \
-        //                 --create-namespace \
-        //                 --set server.service.type=LoadBalancer \
-        //                 --wait \
-        //                 --timeout 10m
-        //             '''
-        //         }
-        //     }
-        // }
+                        helm upgrade --install argocd argo/argo-cd \
+                        --namespace argocd \
+                        --create-namespace \
+                        --set server.service.type=LoadBalancer \
+                        --wait \
+                        --timeout 10m
+                    '''
+                }
+            }
+        }
 
-        // // ---------- Step 12a: wait until all ArgoCD pods are Ready ----------
-        // // `helm --wait` above already blocks on Deployments being Available, but this
-        // // is an explicit, visible check on Pod readiness before we move on.
-        // stage('ArgoCD: Wait For Pods Ready') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
+        // ---------- Step 12a: wait until all ArgoCD pods are Ready ----------
+        // `helm --wait` above already blocks on Deployments being Available, but this
+        // is an explicit, visible check on Pod readiness before we move on.
+        stage('ArgoCD: Wait For Pods Ready') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
 
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ])
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ])
 
-        //         {
-        //             sh '''
-        //                 set -euo pipefail
+                {
+                    sh '''
+                        set -euo pipefail
 
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
-
-        //                 kubectl -n argocd wait --for=condition=Ready pod \
-        //                 -l app.kubernetes.io/part-of=argocd,app.kubernetes.io/component!=redis-secret-init \
-        //                 --timeout=300s
-        //             '''
+                        kubectl -n argocd wait --for=condition=Ready pod \
+                        -l app.kubernetes.io/part-of=argocd,app.kubernetes.io/component!=redis-secret-init \
+                        --timeout=300s
+                    '''
 
                     
-        //         }
-        //     }
-        // }
+                }
+            }
+        }
 
-        // // ---------- Step 12b: wait for the argocd-server LoadBalancer hostname/IP ----------
-        // stage('ArgoCD: Wait For LoadBalancer') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
+        // ---------- Step 12b: wait for the argocd-server LoadBalancer hostname/IP ----------
+        stage('ArgoCD: Wait For LoadBalancer') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
 
-        //     steps {
+            steps {
 
 
-        //     withCredentials([
-        //         string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //         string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //     ])
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ])
 
-        //     {
-        //         sh '''
-        //             set -euo pipefail
+            {
+                // sh '''
+                //     set -euo pipefail
 
-        //             kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //             export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                //     ADDR=""
+                //     for i in $(seq 1 60); do
+                //       ADDR=$(kubectl -n argocd get svc argocd-server \
+                //         -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+                //       if [ -n "$ADDR" ]; then
+                //         echo "argocd-server external address is ready: $ADDR"
+                //         break
+                //       fi
+                //       echo "  [$i/60] argocd-server LoadBalancer not assigned yet, retrying in 10s..."
+                //       sleep 10
+                //     done
 
-        //             ADDR=""
-        //             for i in $(seq 1 60); do
-        //               ADDR=$(kubectl -n argocd get svc argocd-server \
-        //                 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-        //               if [ -n "$ADDR" ]; then
-        //                 echo "argocd-server external address is ready: $ADDR"
-        //                 break
-        //               fi
-        //               echo "  [$i/60] argocd-server LoadBalancer not assigned yet, retrying in 10s..."
-        //               sleep 10
-        //             done
+                //     if [ -z "$ADDR" ]; then
+                //       echo "ERROR: timed out waiting for argocd-server LoadBalancer external hostname/IP" >&2
+                //       exit 1
+                //     fi
 
-        //             if [ -z "$ADDR" ]; then
-        //               echo "ERROR: timed out waiting for argocd-server LoadBalancer external hostname/IP" >&2
-        //               exit 1
-        //             fi
+                // '''
 
-        //         '''
-        //     }
-        //     }
-        // }
+                sh '''
+                    set -euo pipefail
 
-        // // ---------- Step 13-14: get the initial admin password, argocd login ----------
-        // stage('ArgoCD: CLI Login') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
+                    ADDR=""
+                    for i in $(seq 1 60); do
+                    ADDR=$(kubectl -n argocd get svc argocd-server \
+                        -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 
-        //     steps {
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ])
+                    [ -n "$ADDR" ] && break
+                    sleep 10
+                    done
 
-        //         {
+                    ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
+                    -o jsonpath='{.data.password}' | base64 -d)
+
+                    cat > argocd.env <<EOF
+                    ARGOCD_HOST=$ADDR
+                    ARGOCD_PASSWORD=$ARGOCD_PASSWORD
+                    EOF
+
+                    ''' 
+
+            }
+            }
+        }
+
+        // ---------- Step 13-14: get the initial admin password, argocd login ----------
+        stage('ArgoCD: CLI Login') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ])
+
+                {
                     
-        //             sh '''
-        //                 set -euo pipefail
+                    sh '''
+                        set -euo pipefail
 
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                        source argocd.env 
+                        echo "ARGOCD_PASSWORD: $ARGOCD_PASSWORD"
+                        echo "ARGOCD_HOST: $ARGOCD_HOST"
 
-        //                 ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
-        //                 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
+                        argocd login "$ARGOCD_HOST" \
+                        --username admin \
+                        --password "$ARGOCD_PASSWORD" \
+                        --insecure
+                    '''
+                }
 
-        //                 ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
-        //                 -o jsonpath='{.data.password}' | base64 -d)
+            }
+        }
 
-        //                 argocd login "$ARGOCD_HOST" \
-        //                 --username admin \
-        //                 --password "$ARGOCD_PASSWORD" \
-        //                 --insecure
-        //             '''
-        //         }
-
-        //     }
-        // }
-
-        // // ---------- Step 15: register the EKS cluster with ArgoCD ----------
-        // // The only place in the whole pipeline that touches the EKS cluster directly —
-        // // `aws eks update-kubeconfig` is used solely to produce the context that
-        // // `argocd cluster add` then registers. --name pins the registered name to
-        // // match spec.destination.name in Argo-CD/root-app.yml.
-        // stage('ArgoCD: Register EKS Cluster') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
+        // ---------- Step 15: register the EKS cluster with ArgoCD ----------
+        // The only place in the whole pipeline that touches the EKS cluster directly —
+        // `aws eks update-kubeconfig` is used solely to produce the context that
+        // `argocd cluster add` then registers. --name pins the registered name to
+        // match spec.destination.name in Argo-CD/root-app.yml.
+        stage('ArgoCD: Register EKS Cluster') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
        
-        //         // unstash 'eks-outputs'
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) {
-        //             sh '''
-        //                 set -euo pipefail
-        //                 . "${TF_DIR_EKS}/eks-outputs.env"
+                // unstash 'eks-outputs'
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
 
-
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
-
-        //                 # ArgoCD CLI needs to be logged in and pointed at the ArgoCD server
-        //                 # for this call; KUBECONFIG here is only used by `argocd cluster add`
-
-
-        //                 # itself to read the EKS context it registers.
-        //                 ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
-        //                 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
-                        
-        //                 ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
-        //                 -o jsonpath='{.data.password}' | base64 -d)
-
-        //                 argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
-
-        //                 echo ${EKS_CLUSTER_NAME}
-
-        //                 aws eks update-kubeconfig \
-        //                   --region "eu-north-1" \
-        //                   --name "$EKS_CLUSTER_NAME" \
-        //                   --kubeconfig eks.kubeconfig
-
-        //                 EKS_CONTEXT=$(KUBECONFIG=eks.kubeconfig kubectl config current-context)
-
-        //                 KUBECONFIG=eks.kubeconfig argocd cluster add "$EKS_CONTEXT" \
-        //                   --name "${ARGOCD_EKS_CLUSTER_NAME}" \
-        //                   --yes
-
-        //                 rm -f eks.kubeconfig
-        //             '''
-        //         }
-        //     }
-        // }
-
-        // // ---------- Step 16: register the Git repository, only if private ----------
-        // stage('ArgoCD: Register Git Repository') {
-        //     when { expression { return params.PRIVATE_REPO } }
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS',usernameVariable: 'GIT_USERNAME',passwordVariable: 'GIT_PAT'),
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) {
-        //             sh '''
-        //                 set -euo pipefail
-
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
-
-        //                 ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
-        //                 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
-                        
-        //                 ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
-        //                 -o jsonpath='{.data.password}' | base64 -d)
-
-        //                 argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+                        source "${TF_DIR_EKS}/eks-outputs.env" # this export the EKS_CLUSTER_NAME & EKS_API_SERVER as env variables
+                        source argocd.env
 
 
 
-        //                 argocd repo add "${GIT_REPO_URL}" \
-        //                     --username "$GIT_USERNAME" \
-        //                     --password "$GIT_PAT"
-        //             '''
-        //         }
-        //     }
-        // }
+                        # ArgoCD CLI needs to be logged in and pointed at the ArgoCD server
+                        # for this call; KUBECONFIG here is only used by `argocd cluster add`
 
-        // // ---------- Step 17: apply the Root Application ----------
-        // stage('ArgoCD: Apply Root Application') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         {
-
-        //             sh '''
-        //                 set -euo pipefail
-
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
-
-                    
-
-        //                 kubectl apply -f Argo-CD/root-app.yml
-        //             '''
-        //         }
-        //     }
-        // }
-
-        // // ---------- Step 18: wait until the Application is Healthy and Synced ----------
-        // stage('ArgoCD: Wait For Application Healthy & Synced') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         // unstash 'argocd-lb-address'
-
-        //         {
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
 
-        //             sh '''
-        //                 set -euo pipefail
+                        aws eks update-kubeconfig \
+                          --region "eu-north-1" \
+                          --name "$EKS_CLUSTER_NAME" \
+                          --kubeconfig eks.kubeconfig
 
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
+                        EKS_CONTEXT=$(KUBECONFIG=eks.kubeconfig kubectl config current-context)
 
-        //                 ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
-        //                 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
-                        
-        //                 ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
-        //                 -o jsonpath='{.data.password}' | base64 -d)
+                        KUBECONFIG=eks.kubeconfig argocd cluster add "$EKS_CONTEXT" \
+                          --name "${ARGOCD_EKS_CLUSTER_NAME}" \
+                          --yes
 
-        //                 argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+                        rm -f eks.kubeconfig
+                    '''
+                }
+            }
+        }
 
-        //                 argocd app wait "${ROOT_APP_NAME}" \
-        //                 --health \
-        //                 --sync \
-        //                 --timeout 300
-        //             '''
-        //         }
-        //     }
-        // }
+        // ---------- Step 16: register the Git repository, only if private ----------
+        stage('ArgoCD: Register Git Repository') {
+            when { expression { return params.PRIVATE_REPO } }
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS',usernameVariable: 'GIT_USERNAME',passwordVariable: 'GIT_PAT'),
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        set -euo pipefail
 
-        // // ---------- Step 19: final verification ----------
-        // stage('Verify: ArgoCD State') {
-        //     agent {
-        //         docker {
-        //             image "${DEVOPS_IMAGE}"
-        //             label 'agent-1'
-        //             args '-u root'
-        //         }
-        //     }
-        //     steps {
-        //         withCredentials([
-        //             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-        //             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-        //         ]) 
-        //         // unstash 'kops-kubeconfig'
-        //         // unstash 'argocd-lb-address'
-        //         {
+                        source argocd.env
 
-        //             sh '''
-        //                 set -euo pipefail
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
 
-        //                 kops export kubeconfig --admin --name ${KOPS_CLUSTER_NAME} --kubeconfig ${WORKSPACE}/kops.kubeconfig
-        //                 export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
 
-        //                 ARGOCD_HOST=$(kubectl -n argocd get svc argocd-server \
-        //                 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{.status.loadBalancer.ingress[0].ip}')
-                        
-        //                 ARGOCD_PASSWORD=$(KUBECONFIG=${WORKSPACE}/kops.kubeconfig kubectl -n argocd get secret argocd-initial-admin-secret \
-        //                 -o jsonpath='{.data.password}' | base64 -d)
 
-        //                 argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+                        argocd repo add "${GIT_REPO_URL}" \
+                            --username "$GIT_USERNAME" \
+                            --password "$GIT_PAT"
+                    '''
+                }
+            }
+        }
 
-        //                 echo "== ArgoCD Pods =="
-        //                 kubectl get pods -n argocd
+        // ---------- Step 17: apply the Root Application ----------
+        stage('ArgoCD: Apply Root Application') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                {
 
-        //                 echo "== ArgoCD Applications (via kubectl) =="
-        //                 kubectl get applications -n argocd
+                    sh '''
+                        set -euo pipefail
 
-        //                 echo "== ArgoCD Apps (via CLI) =="
-        //                 argocd app list
+                        kubectl apply -f Argo-CD/root-app.yml
+                    '''
+                }
+            }
+        }
 
-        //                 echo "== Root Application detail =="
-        //                 argocd app get "${ROOT_APP_NAME}"
+        // ---------- Step 18: wait until the Application is Healthy and Synced ----------
+        stage('ArgoCD: Wait For Application Healthy & Synced') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                // unstash 'argocd-lb-address'
 
-        //                 echo "===== LoadBalancer ====="
-        //                 kubectl -n argocd get svc argocd-server
+                {
 
-        //                 echo
-        //                 echo "===== Initial Password ====="
-        //                 kubectl -n argocd get secret argocd-initial-admin-secret \
-        //                 -o jsonpath='{.data.password}' | base64 -d
 
-        //             '''
-        //         }
-        //     }
-        // }
+                    sh '''
+                        set -euo pipefail
+
+                        source argocd.env
+
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+                        argocd app wait "${ROOT_APP_NAME}" \
+                        --health \
+                        --sync \
+                        --timeout 300
+                    '''
+                }
+            }
+        }
+
+        // ---------- Step 19: final verification ----------
+        stage('Verify: ArgoCD State') {
+            agent {
+                docker {
+                    image "${DEVOPS_IMAGE}"
+                    label 'agent-1'
+                    args '-u root'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) 
+                // unstash 'kops-kubeconfig'
+                // unstash 'argocd-lb-address'
+                {
+
+                    sh '''
+                        set -euo pipefail
+
+                        source argocd.env
+
+                        argocd login "$ARGOCD_HOST" --username admin --password "$ARGOCD_PASSWORD" --insecure
+
+                        echo "== ArgoCD Pods =="
+                        kubectl get pods -n argocd
+
+                        echo "== ArgoCD Applications (via kubectl) =="
+                        kubectl get applications -n argocd
+
+                        echo "== ArgoCD Apps (via CLI) =="
+                        argocd app list
+
+                        echo "== Root Application detail =="
+                        argocd app get "${ROOT_APP_NAME}"
+
+                        echo "===== LoadBalancer ====="
+                        kubectl -n argocd get svc argocd-server
+
+                        echo
+                        echo "===== Initial Password ====="
+                        kubectl -n argocd get secret argocd-initial-admin-secret \
+                        -o jsonpath='{.data.password}' | base64 -d
+
+                    '''
+                }
+            }
+        }
     }
 }
