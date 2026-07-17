@@ -388,10 +388,7 @@ pipeline {
                     ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret \
                     -o jsonpath='{.data.password}' | base64 -d)
 
-                    cat > argocd.env <<EOF
-                    ARGOCD_HOST=$ADDR
-                    ARGOCD_PASSWORD=$ARGOCD_PASSWORD
-                    EOF
+                    printf 'ARGOCD_HOST=%s\nARGOCD_PASSWORD=%s\n' "$ADDR" "$ARGOCD_PASSWORD" > argocd.env
 
                     ''' 
 
