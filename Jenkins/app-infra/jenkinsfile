@@ -246,10 +246,8 @@ pipeline {
 
                         # kops export kubeconfig --admin --kubeconfig ${WORKSPACE}/kops.kubeconfig
                         kops export kubeconfig --admin  
-                        kubectl get nodes 
-                        cat ${WORKSPACE}/kops.kubeconfig || true
-                        cat ~/.kube/config || true
-                        # make it at ~/.kube/config use it directly without export it will be at ${WORKSPACE} and this will bind mount to each container each time 
+                        kubectl config current-context
+                        # make it at ~/.kube/config use it directly without export it will be at ${WORKSPACE} need to do it each container cause /root/.kube/config is not in workspace so its not shared 
                     '''
                 }
 
@@ -275,9 +273,6 @@ pipeline {
                     sh '''
                         set -euo pipefail
 
-                        # the kops file already generated from previous stage 
-                        #export KUBECONFIG=${WORKSPACE}/kops.kubeconfig
-                        
                         kops validate cluster --wait 15m
                     '''
             }
@@ -304,6 +299,7 @@ pipeline {
                     sh '''
                         set -euo pipefail
 
+                        kops export kubeconfig --admin 
 
                         helm repo add argo https://argoproj.github.io/argo-helm
                         helm repo update
@@ -340,6 +336,8 @@ pipeline {
                 {
                     sh '''
                         set -euo pipefail
+
+                        kops export kubeconfig --admin 
 
                         kubectl -n argocd wait --for=condition=Ready pod \
                         -l app.kubernetes.io/part-of=argocd,app.kubernetes.io/component!=redis-secret-init \
@@ -395,6 +393,10 @@ pipeline {
                 sh '''
                     set -euo pipefail
 
+
+                    kops export kubeconfig --admin 
+
+
                     ADDR=""
                     for i in $(seq 1 60); do
                     ADDR=$(kubectl -n argocd get svc argocd-server \
@@ -439,6 +441,8 @@ pipeline {
                     sh '''
                         set -euo pipefail
 
+                        kops export kubeconfig --admin 
+
                         source argocd.env 
                         echo "ARGOCD_PASSWORD: $ARGOCD_PASSWORD"
                         echo "ARGOCD_HOST: $ARGOCD_HOST"
@@ -475,6 +479,9 @@ pipeline {
                 ]) {
                     sh '''
                         set -euo pipefail
+
+                        kops export kubeconfig --admin 
+
 
                         source "${TF_DIR_EKS}/eks-outputs.env" # this export the EKS_CLUSTER_NAME & EKS_API_SERVER as env variables
                         source argocd.env
@@ -522,6 +529,8 @@ pipeline {
                 ]) {
                     sh '''
                         set -euo pipefail
+                        kops export kubeconfig --admin 
+
 
                         source argocd.env
 
@@ -555,6 +564,7 @@ pipeline {
 
                     sh '''
                         set -euo pipefail
+                        kops export kubeconfig --admin 
 
                         kubectl apply -f Argo-CD/root-app.yml
                     '''
@@ -583,6 +593,7 @@ pipeline {
 
                     sh '''
                         set -euo pipefail
+                        kops export kubeconfig --admin 
 
                         source argocd.env
 
@@ -617,6 +628,7 @@ pipeline {
 
                     sh '''
                         set -euo pipefail
+                        kops export kubeconfig --admin 
 
                         source argocd.env
 
