@@ -419,14 +419,14 @@ pipeline {
                         set -euo pipefail
                         pwd 
                         ls -lR
-
+]
                         ls -lah argocd.env || true
                         cat argocd.env || true
 
 
                         kops export kubeconfig --admin 
 
-                        . argocd.env 
+                        source ./argocd.env 
                         echo "ARGOCD_PASSWORD: $ARGOCD_PASSWORD"
                         echo "ARGOCD_HOST: $ARGOCD_HOST"
 
