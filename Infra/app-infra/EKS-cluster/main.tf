@@ -80,7 +80,7 @@ module "helm-external-secret-operator" {
   source                                = "./modules/Helm_addons_module/External_secret_operator_module"
   external_secrets_service_account_name = "external-secrets-sa"
   external_secrets_IRSA_arn             = module.IRSA.external_secrets_IRSA_arn
-  depends_on                            = [module.access-to-cluster,module.Helm-ebs-csi, module.helm-alb, module.helm-external-dns-operator]
+  depends_on                            = [module.access-to-cluster, module.Helm-ebs-csi, module.helm-alb, module.helm-external-dns-operator]
 }
 
 # module "helm_kube_prometheus_stack_operator" {
