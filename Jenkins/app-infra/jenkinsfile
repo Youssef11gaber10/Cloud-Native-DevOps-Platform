@@ -56,15 +56,27 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ])
             {
+                script {
+                    env.TEST_ENV = "THIS IS TEST ENV VARIABLE PASS FROM STAGE 1"
+                }
+                sh 'echo "==============stage 1=============="'
+                sh 'echo "==============the env variable we set=============="'
+                sh 'echo "$TEST_ENV"'
+
                 sh 'echo "========== work space files =========="'
+                sh 'pwd'
                 sh 'ls -lR'
                 sh 'echo "this is test file want pass to anothe stage " >> gaber-out.txt '
-                sh '${TEST_ENV}="THIS IS TEST ENV VARIABLE PASS FROM PREV STAGE "'
+                sh 'ls -lah '
+                sh 'cat gaber-out.txt'
 
                 dir("${TF_DIR_EKS}") {
                     sh 'echo "========== cd to ${TF_DIR_EKS} =========="'
                     sh 'ls -lR'
+                    sh 'pwd'
                     sh 'echo "this is test file want pass to anothe stage " >> gaber-in.txt '
+                    sh 'ls -lah '
+                    sh 'cat gaber-in.txt'
                 }
 
             }
@@ -91,11 +103,23 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ])
             {
-                unstash 'gaber1'
+                sh 'echo "==============stage 2=============="'
+                sh 'echo "==============print the env variable we set in stage 1 to stage 2 its global evn variable ==============="'
+                sh 'echo "$TEST_ENV"'
+                sh 'echo "============== work space files =========="'
+                sh 'pwd'
                 sh "ls -lR"
+                sh 'echo "==========try to unstash the files from stage 1 to stage 2 =========="'
+                unstash 'gaber1'
+                sh 'ls -lR'
                 sh 'cat gaber-out.txt'
+
                 dir("${TF_DIR_EKS}") {
+                    sh 'echo "========== cd to ${TF_DIR_EKS} =========="'
+                    sh 'echo "==========try to unstash the files from stage 1 to stage 2 inside ${TF_DIR_EKS} =========="'
+
                     unstash 'gaber2'
+
                     sh "ls -lR"
                     sh 'cat gaber-in.txt'
                 }
