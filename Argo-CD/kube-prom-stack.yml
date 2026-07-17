@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1 
+kind: Application 
+metadata: 
+  name: kube-prom-stack
+  namespace: argocd  
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec: 
+  project: default 
+
+  source: 
+    repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
+    path: ./Helm/system-charts/kube-prometheus-stack
+
+    targetRevision: main  
+    helm:
+      releaseName: kube-prom-stack-release
+
+  destination: # eks cluster
+    server: https://ECBBC17AA569A95022111B1B04E0F955.gr7.eu-north-1.eks.amazonaws.com
+    namespace: monitoring
+
+
+  syncPolicy: 
+    # manual:  # (manual approval) CD contionus Delivery
+    automated: # CD continous deployment (no manual appro)
+      selfHeal: true  
+      prune: true 
+    syncOptions:
+      - CreateNamespace=false 
+
+      

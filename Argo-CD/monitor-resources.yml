@@ -3,6 +3,8 @@ kind: Application
 metadata: 
   name: monitoring-apps
   namespace: argocd  
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
 spec: 
   project: default 
 
@@ -14,7 +16,7 @@ spec:
 
   destination: # eks cluster
     server: https://ECBBC17AA569A95022111B1B04E0F955.gr7.eu-north-1.eks.amazonaws.com
-    namespace: argocd
+    namespace: monitoring
 
 
   syncPolicy: 
