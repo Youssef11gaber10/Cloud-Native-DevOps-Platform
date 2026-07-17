@@ -151,7 +151,6 @@ pipeline {
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) 
                 {
-                    unstash 'tfplan-eks'
                     dir("${TF_DIR_EKS}") {
                         sh 'ls -lah tfplan'
                         sh 'cat tfplan'
