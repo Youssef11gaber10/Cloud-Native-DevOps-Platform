@@ -2,7 +2,8 @@
 nodeExporter:
   enabled: true
 
-
+prometheusOperator:
+  enabled: true
 
 grafana:
   enabled: true
