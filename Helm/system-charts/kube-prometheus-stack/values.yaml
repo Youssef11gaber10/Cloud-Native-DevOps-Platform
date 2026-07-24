@@ -2,9 +2,12 @@
 nodeExporter:
   enabled: true
 
-  
+
+
 grafana:
   enabled: false
+  serivce:
+    type: LoadBalancer
 
   
 prometheus:

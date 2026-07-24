@@ -17,7 +17,8 @@ spec:
       releaseName: kube-prom-stack-release
 
   destination: # eks cluster
-    server: https://ECBBC17AA569A95022111B1B04E0F955.gr7.eu-north-1.eks.amazonaws.com
+    # server: https://ECBBC17AA569A95022111B1B04E0F955.gr7.eu-north-1.eks.amazonaws.com
+    name: eks-prod
     namespace: monitoring
 
 
