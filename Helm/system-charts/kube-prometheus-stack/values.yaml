@@ -6,8 +6,9 @@ nodeExporter:
 
 grafana:
   enabled: true
-  serivce:
+  service:
     type: LoadBalancer
+
 
   
 prometheus:
