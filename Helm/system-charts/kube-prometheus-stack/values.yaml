@@ -14,21 +14,6 @@
 
 
 
-alertmanager:
-  config:
-    route:
-      receiver: slack
-
-      routes:
-        - matchers:
-            - severity="critical"
-          receiver: slack
-
-    receivers:
-      - name: slack
-        slack_configs:
-          - api_url: "webhook_url"
-            channel: "#promethues_channel"
 
 
 
@@ -459,6 +444,22 @@ alertmanager:
   ## Deploy alertmanager
   ##
   enabled: true
+  
+  config:
+    route:
+      receiver: slack
+
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: slack
+
+    receivers:
+      - name: slack
+        slack_configs:
+          - api_url: "webhook_url"
+            channel: "#promethues_channel"
+
 
   # Optional: Override the namespace where Alertmanager will be deployed.
   namespaceOverride: ""
