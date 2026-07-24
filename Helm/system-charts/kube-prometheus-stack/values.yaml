@@ -364,13 +364,6 @@ additionalPrometheusRulesMap:
     groups:
       - name: node.rules
         rules:
-          # - alert: HighCPUUsage
-          #   expr: |
-          #     100 - (avg by(instance)
-          #     (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 90
-          #   for: 30s
-          #   labels:
-          #     severity: critical
 
           - alert: HighCPUUsageCritical
             expr: 100 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100 > 90 # if node avg cpu idle (not working 9% - 100) is more than 90% so its use more than 90$
@@ -380,12 +373,7 @@ additionalPrometheusRulesMap:
             annotations:  
               summary: 'cpu usage high'
               description: 'cpu usage above 90% on {{ $labels.instance }}'
-#  rule-name:
-#    groups:
-#    - name: my_group
-#      rules:
-#      - record: my_record
-#        expr: 100 * my_record
+
 
 ##
 global:
@@ -445,21 +433,6 @@ alertmanager:
   ##
   enabled: true
   
-  config:
-    route:
-      receiver: slack
-
-      routes:
-        - matchers:
-            - severity="critical"
-          receiver: slack
-
-    receivers:
-      - name: slack
-        slack_configs:
-          - api_url: "webhook_url"
-            channel: "#promethues_channel"
-
 
   # Optional: Override the namespace where Alertmanager will be deployed.
   namespaceOverride: ""
@@ -610,16 +583,20 @@ alertmanager:
   ## ref: https://prometheus.io/docs/alerting/configuration/#configuration-file
   ##      https://prometheus.io/webtools/alerting/routing-tree-editor/
   ##
+
+
   config:
     global:
       resolve_timeout: 5m
+
+
     inhibit_rules:
       - source_matchers:
-          - 'severity = critical'
+          - 'severity = critical' # if there is a critical alert, ignore all warnings
         target_matchers:
-          - 'severity =~ warning|info'
+          - 'severity =~ warning|info' # ignore warnings and infos 
         equal:
-          - 'namespace'
+          - 'namespace' # from the same namespace & alertname
           - 'alertname'
       - source_matchers:
           - 'severity = warning'
@@ -636,18 +613,48 @@ alertmanager:
           - 'namespace'
       - target_matchers:
           - 'alertname = InfoInhibitor'
+
+
+
+
     route:
-      group_by: ['namespace']
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 12h
-      receiver: 'null'
+      receiver: 'default'
+      group_by: ['...']
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 2m
+
+
       routes:
-      - receiver: 'null'
+
+
+      - receiver: 'slack-critical'
+        group_by: ['alertname']
+        group_wait: 1s
+        group_interval: 10s
+        repeat_interval: 1m
         matchers:
-          - alertname = "Watchdog"
+          - severity = 'critical'
+
+
     receivers:
-    - name: 'null'
+    - name: "default"
+      email_configs:
+      - to: "yooossef11gaber10@gmail.com"
+        from: "youssef11gaber10@gmail.com"
+        smtp_smarthost: "smtp.gmail.com:587"
+        auth_username: "youssef11gaber10@gmail.com"
+        auth_password: "oshd qfjw hlki jvry"
+        send_resolved: true
+
+
+    - name: "slack-critical"
+      slack_configs:
+        - api_url_file: "/etc/alertmanager/secrets/alertmanager-slack/slack-webhook"
+          channel: "#promethues_channel"
+          send_resolved: true
+
+
     templates:
     - '/etc/alertmanager/config/*.tmpl'
 
@@ -1038,7 +1045,8 @@ alertmanager:
     ## Secrets is a list of Secrets in the same namespace as the Alertmanager object, which shall be mounted into the
     ## Alertmanager Pods. The Secrets are mounted into /etc/alertmanager/secrets/.
     ##
-    secrets: []
+    secrets: 
+      - alertmanager-slack
 
     ## If false then the user will opt out of automounting API credentials.
     ##
