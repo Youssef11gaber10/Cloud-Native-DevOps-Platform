@@ -11,7 +11,6 @@ spec:
             name: elsticsearch-chart
             releaseName: elasticsearch
             path: ./Helm/system-charts/ELK-stack/elasticsearch
-            namespace: logging
           - order: -2
             name: kibana-chart
             releaseName: kibana
