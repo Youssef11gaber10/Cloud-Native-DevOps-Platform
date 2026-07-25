@@ -336,7 +336,7 @@ defaultRules:
 additionalPrometheusRulesMap: 
   node-rules:
     groups:
-      - name: node.rules
+      - name: youssef-custom-rules
         rules:
 
           - alert: HighCPUUsageCritical
@@ -592,9 +592,9 @@ alertmanager:
 
 
     route:
+      receiver: "slack-critical"   
+      
       routes:
-
-
       - receiver: 'slack-critical'
         group_by: ['alertname']
         group_wait: 1s
