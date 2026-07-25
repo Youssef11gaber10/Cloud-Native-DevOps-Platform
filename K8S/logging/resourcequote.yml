@@ -11,7 +11,7 @@ spec:
     limits.cpu: "4"
 
     # Memory
-    requests.memory: 1000Mi
+    requests.memory: 2000Mi
     limits.memory: 4000Mi
 
     # Storage
@@ -20,8 +20,8 @@ spec:
     # Objects
     pods: "25"
     services: "15"
-    configmaps: "50"
-    secrets: "50"
+    configmaps: "30"
+    secrets: "30"
 
     # Persistent Volumes
     persistentvolumeclaims: "5"

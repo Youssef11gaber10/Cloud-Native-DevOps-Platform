@@ -333,6 +333,8 @@ defaultRules:
 
 ## Provide custom recording or alerting rules to be deployed into the cluster.
 ##
+
+#update it 
 additionalPrometheusRulesMap: 
   node-rules:
     groups:
@@ -558,7 +560,7 @@ alertmanager:
   ##      https://prometheus.io/webtools/alerting/routing-tree-editor/
   ##
 
-
+# update it 
   config:
     global:
       resolve_timeout: 5m
@@ -593,7 +595,7 @@ alertmanager:
 
     route:
       receiver: "slack-critical"   
-      
+
       routes:
       - receiver: 'slack-critical'
         group_by: ['alertname']
@@ -1322,6 +1324,7 @@ alertmanager:
 
 ## Using default values from https://github.com/grafana-community/helm-charts/blob/main/charts/grafana/values.yaml
 ##
+# check it 
 grafana:
   enabled: true
   namespaceOverride: ""
@@ -2628,6 +2631,7 @@ kube-state-metrics:
 ## Deploy node exporter as a daemonset to all nodes
 ##
 
+#check it 
 nodeExporter:
   enabled: true
   operatingSystems:
@@ -4424,6 +4428,7 @@ prometheus:
 
     ## How long to retain metrics
     ##
+    # update it 
     retention: 3d
 
     ## Maximum size of metrics
