@@ -8,11 +8,11 @@ spec:
   hard:
     # CPU
     requests.cpu: "1"
-    limits.cpu: "2"
+    limits.cpu: "4"
 
     # Memory
     requests.memory: 1000Mi
-    limits.memory: 2000Mi
+    limits.memory: 4000Mi
 
     # Storage
     requests.storage: 30Gi
