@@ -63,7 +63,7 @@ daemonset:
       #   protocol: https
       #   ssl.certificate_authorities: ["/usr/share/filebeat/certs/ca.crt"]
       output.logstash:
-        hosts: ["logstash-svc:5044"]
+        hosts: ["logstash-svc:5044"] # fix service name of logstash in template/service.yml on chart of logstash 
 
 
   # Only used when updateStrategy is set to "RollingUpdate"
@@ -90,10 +90,10 @@ daemonset:
   resources:
     requests:
       cpu: "100m"
-      memory: "100Mi"
+      memory: "256Mi"
     limits:
       cpu: "1000m"
-      memory: "200Mi"
+      memory: "512Mi"
   tolerations: []
 
 

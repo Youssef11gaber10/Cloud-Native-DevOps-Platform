@@ -25,8 +25,8 @@ logstashPipeline:
   logstash.conf: |
     input {
       beats {
-        host: "0.0.0.0" # all interfaces will exist on worker node the filebeat chart will make deamonset on its worker node open on port 5044
-        port: 5044
+        host=> "0.0.0.0" # all interfaces will exist on worker node the filebeat chart will make deamonset on its worker node open on port 5044
+        port=> 5044
       }
     }
 
@@ -41,11 +41,12 @@ logstashPipeline:
     stdout { codec => rubydebug }
 
     elasticsearch {
-      hosts => ["https://localhost:9200"]
+      # hosts => ["https://localhost:9200"] # can be like that the pod are open on port 9200
+      hosts => ["https://elasticsearch-master:9200"] # name of svc of elasticsearch chart
       user=> "elastic"
       password => "123"
-      ssl_enabled => true
-      ssl_certificate_authority => "/usr/share/logstash/config/my-elasticsearch-cert/ca.crt"
+      ssl => true
+      cacert => "/usr/share/logstash/config/my-elasticsearch-cert/ca.crt"
       index => "eks-prod-index-%{+YYYY.MM.dd}"
       
     }
@@ -105,7 +106,7 @@ secrets: []
 secretMounts:  # this create in elasticsearch chart in values.yml when creatCert:true
   - name: "secret-elasticsearch-certs"
     secretName: "elasticsearch-master-certs" # this default name  of cert secret that elasticsearch chart create it 
-    mountPath: "/usr/share/logstash/config/my-elasticsearch-cert" # so choose this path in output{} of logstash
+    path: "/usr/share/logstash/config/my-elasticsearch-cert" # so choose this path in output{} of logstash
     defaultMode: 0755
     
 
