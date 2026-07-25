@@ -28,3 +28,10 @@ spec:
       destination:
         name: eks-prod
         namespace: '{{namespace}}'
+      syncPolicy:
+        automated: 
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=false
+          
