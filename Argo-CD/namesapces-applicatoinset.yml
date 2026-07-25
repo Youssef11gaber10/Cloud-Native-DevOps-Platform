@@ -1,0 +1,30 @@
+apiVersion: argocd.argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: namespaces-applications
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: monitoring-apps
+            path: ./K8S/monitoring
+            namespace: monitoring
+          - name: logging-apps
+            path: ./K8S/logging
+            namespace: logging
+
+  template:
+    metadata:
+      name: '{{name}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
+        path: '{{path}}'
+        targetRevision: main
+      destination:
+        name: eks-prod
+        namespace: '{{namespace}}'
