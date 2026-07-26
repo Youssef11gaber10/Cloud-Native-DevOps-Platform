@@ -8,7 +8,7 @@ spec:
   hard:
     # CPU
     requests.cpu: "1"
-    limits.cpu: "4"
+    limits.cpu: "5"
 
     # Memory
     requests.memory: 2000Mi
