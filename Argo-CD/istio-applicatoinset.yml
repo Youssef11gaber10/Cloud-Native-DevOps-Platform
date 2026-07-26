@@ -45,3 +45,16 @@ spec:
         syncOptions:
           - CreateNamespace=false
           
+    ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
+      jsonPointers:
+      - /webhooks/0/failurePolicy
+      - /webhooks/0/clientConfig/caBundle
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      name: istio-sidecar-injector
+      jsonPointers:
+      - /webhooks/0/clientConfig/caBundle
+          
