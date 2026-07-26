@@ -1,0 +1,39 @@
+{
+  "name": "intelligent_infrastructure_automation_platform",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hebamaher/Intelligent_Infrastructure_Automation_Platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hebamaher/Intelligent_Infrastructure_Automation_Platform/issues"
+  },
+  "homepage": "https://github.com/hebamaher/Intelligent_Infrastructure_Automation_Platform#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "handlebars": "^4.7.9",
+    "joi": "^18.2.3",
+    "js-yaml": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "libsodium-wrappers": "^0.8.4",
+    "mysql2": "^3.22.5",
+    "sequelize": "^6.37.8",
+    "simple-git": "^3.36.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

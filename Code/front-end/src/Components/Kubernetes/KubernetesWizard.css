@@ -1,0 +1,399 @@
+/* Kubernetes Deployment Wizard — built on the same design tokens as
+   Projects.css (themed glass cards, indigo -> cyan gradient accents,
+   pill buttons) so it feels native to the rest of the platform. */
+
+.k8s-step-tracker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.k8s-step-tracker__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-color-strong);
+  background: var(--bg-input);
+  color: var(--text-tertiary);
+  border-radius: 999px;
+  padding: 6px 12px 6px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.k8s-step-tracker__item:hover {
+  border-color: var(--accent-soft-strong);
+  color: var(--text-secondary);
+}
+
+.k8s-step-tracker__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface-hover);
+  font-size: 0.7rem;
+}
+
+.k8s-step-tracker__item.is-active {
+  border-color: var(--accent-soft-strong);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.k8s-step-tracker__item.is-active .k8s-step-tracker__num,
+.k8s-step-tracker__item.is-done .k8s-step-tracker__num {
+  background: var(--accent-gradient);
+  color: #fff;
+}
+
+.k8s-step-tracker__item.is-done {
+  color: var(--text-secondary);
+}
+
+.k8s-wizard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.k8s-wizard-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.k8s-step__title {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.k8s-step__hint {
+  color: var(--text-tertiary);
+  margin: 0 0 20px;
+  line-height: 1.7;
+}
+
+.k8s-field {
+  display: grid;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.k8s-field input,
+.k8s-field select {
+  width: 100%;
+  border: 1px solid var(--border-color-strong);
+  border-radius: var(--radius-xs);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 9px 12px;
+  outline: none;
+}
+
+.k8s-field input:disabled {
+  color: var(--text-muted);
+  background: var(--bg-surface-soft);
+}
+
+.k8s-field--checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.k8s-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+@media (max-width: 700px) {
+  .k8s-field-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.k8s-subsection {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.k8s-subsection h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.k8s-subsection__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.k8s-envvar-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 140px 40px;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.k8s-envvar-row input,
+.k8s-envvar-row select {
+  border: 1px solid var(--border-color-strong);
+  border-radius: var(--radius-xs);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  outline: none;
+}
+
+.k8s-icon-button {
+  border: none;
+  background: var(--danger-bg);
+  color: var(--danger-strong);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.k8s-toggle-group {
+  display: inline-flex;
+  border: 1px solid var(--border-color-strong);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.k8s-toggle-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  padding: 8px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.k8s-toggle-btn.is-selected {
+  background: var(--accent-gradient);
+  color: #fff;
+}
+
+.k8s-radio-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.k8s-radio-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border-color-strong);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  cursor: pointer;
+  background: var(--bg-surface-soft);
+}
+
+.k8s-radio-card input {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.k8s-radio-card.is-selected {
+  border-color: var(--accent-soft-strong);
+  background: var(--accent-soft);
+}
+
+.k8s-radio-card__title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.k8s-radio-card__hint {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.k8s-permission-table-wrap {
+  overflow-x: auto;
+}
+
+.k8s-permission-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.k8s-permission-table th,
+.k8s-permission-table td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.k8s-permission-table th:first-child,
+.k8s-permission-table td:first-child {
+  text-align: left;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.k8s-wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.k8s-wizard-actions__final {
+  display: flex;
+  gap: 12px;
+}
+
+.k8s-result {
+  margin-top: 20px;
+}
+
+.k8s-result__meta {
+  color: var(--success);
+  font-size: 0.75rem;
+}
+
+.k8s-result__files {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--success);
+}
+
+.k8s-preview {
+  margin-top: 24px;
+}
+
+.k8s-preview__file {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  background: var(--bg-surface-soft);
+}
+
+.k8s-preview__file summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.k8s-preview__file pre {
+  margin-top: 10px;
+  white-space: pre-wrap;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+/* ---- Live summary sidebar --------------------------------------------- */
+.k8s-summary {
+  position: sticky;
+  top: 24px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.k8s-summary__title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.k8s-summary__facts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.k8s-summary__facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+
+.k8s-summary__facts dt {
+  color: var(--text-tertiary);
+}
+
+.k8s-summary__facts dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.k8s-summary__subtitle {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.k8s-summary__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.k8s-summary__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.k8s-summary__item.is-on {
+  color: var(--success);
+}
+
+.k8s-summary__mark {
+  width: 18px;
+  display: inline-block;
+  text-align: center;
+}
+
+@media (max-width: 992px) {
+  .k8s-wizard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .k8s-summary {
+    position: static;
+  }
+}
