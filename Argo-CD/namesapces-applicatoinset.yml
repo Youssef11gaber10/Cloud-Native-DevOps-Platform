@@ -13,6 +13,9 @@ spec:
           - name: logging-apps
             path: ./K8S/logging
             namespace: logging
+          - name: istio-system-apps
+            path: ./K8S/istio-system
+            namespace: istio-system
 
   template:
     metadata:
