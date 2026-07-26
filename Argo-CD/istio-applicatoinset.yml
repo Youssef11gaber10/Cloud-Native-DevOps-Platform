@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: istio-applicationset
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - order: "-3"
+            name: base-chart
+            releaseName: base
+            path: ./Helm/system-charts/istio/base
+          - order: "-2"
+            name: istiod-chart
+            releaseName: istiod
+            path: ./Helm/system-charts/istio/istiod
+          - order: "-1"
+            name: gateway-chart
+            releaseName: gateway
+            path: ./Helm/system-charts/istio/gateway
+
+
+  template:
+    metadata:
+      name: '{{name}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{order}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
+        path: '{{path}}'
+        targetRevision: main
+        helm:
+          releaseName: '{{releaseName}}'
+
+      destination:
+        name: eks-prod
+        namespace: 'istio-system'
+      syncPolicy:
+        automated: 
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=false
+          
