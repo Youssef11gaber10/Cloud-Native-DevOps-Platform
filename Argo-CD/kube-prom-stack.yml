@@ -1,33 +1,33 @@
-apiVersion: argoproj.io/v1alpha1 
-kind: Application 
-metadata: 
-  name: kube-prom-stack
-  namespace: argocd  
-  annotations:
-    argocd.argoproj.io/sync-wave: "-2"
-spec: 
-  project: default 
+# apiVersion: argoproj.io/v1alpha1 
+# kind: Application 
+# metadata: 
+#   name: kube-prom-stack
+#   namespace: argocd  
+#   annotations:
+#     argocd.argoproj.io/sync-wave: "-2"
+# spec: 
+#   project: default 
 
-  source: 
-    repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
-    path: ./Helm/system-charts/kube-prometheus-stack
+#   source: 
+#     repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
+#     path: ./Helm/system-charts/kube-prometheus-stack
 
-    targetRevision: main  
-    helm:
-      releaseName: kube-prom-stack-release
+#     targetRevision: main  
+#     helm:
+#       releaseName: kube-prom-stack-release
 
-  destination: # eks cluster
-    name: eks-prod
-    namespace: monitoring
+#   destination: # eks cluster
+#     name: eks-prod
+#     namespace: monitoring
 
 
-  syncPolicy: 
-    # manual:  # (manual approval) CD contionus Delivery
-    automated: # CD continous deployment (no manual appro)
-      selfHeal: true  
-      prune: true 
-    syncOptions:
-      - CreateNamespace=false 
-      - ServerSideApply=true
+#   syncPolicy: 
+#     # manual:  # (manual approval) CD contionus Delivery
+#     automated: # CD continous deployment (no manual appro)
+#       selfHeal: true  
+#       prune: true 
+#     syncOptions:
+#       - CreateNamespace=false 
+#       - ServerSideApply=true
 
       
