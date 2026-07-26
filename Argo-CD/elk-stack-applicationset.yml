@@ -1,51 +1,53 @@
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: elk-stack-applicationset
-  namespace: argocd
-spec:
-  generators:
-    - list:
-        elements:
-          - order: "-4"
-            name: elsticsearch-chart
-            releaseName: elasticsearch
-            path: ./Helm/system-charts/ELK-stack/elasticsearch
-          - order: "-3"
-            name: kibana-chart
-            releaseName: kibana
-            path: ./Helm/system-charts/ELK-stack/kibana
-          - order: "-2"
-            name: logstash-chart
-            releaseName: logstash
-            path: ./Helm/system-charts/ELK-stack/logstash
-          - order: "-1"
-            name: filebeat-chart
-            releaseName: filebeat
-            path: ./Helm/system-charts/ELK-stack/filebeat
+# for reduce cost while continue development
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: ApplicationSet
+# metadata:
+#   name: elk-stack-applicationset
+#   namespace: argocd
+# spec:
+#   generators:
+#     - list:
+#         elements:
+#           - order: "-4"
+#             name: elsticsearch-chart
+#             releaseName: elasticsearch
+#             path: ./Helm/system-charts/ELK-stack/elasticsearch
+#           - order: "-3"
+#             name: kibana-chart
+#             releaseName: kibana
+#             path: ./Helm/system-charts/ELK-stack/kibana
+#           - order: "-2"
+#             name: logstash-chart
+#             releaseName: logstash
+#             path: ./Helm/system-charts/ELK-stack/logstash
+#           - order: "-1"
+#             name: filebeat-chart
+#             releaseName: filebeat
+#             path: ./Helm/system-charts/ELK-stack/filebeat
 
 
-  template:
-    metadata:
-      name: '{{name}}'
-      annotations:
-        argocd.argoproj.io/sync-wave: "{{order}}"
-    spec:
-      project: default
-      source:
-        repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
-        path: '{{path}}'
-        targetRevision: main
-        helm:
-          releaseName: '{{releaseName}}'
+#   template:
+#     metadata:
+#       name: '{{name}}'
+#       annotations:
+#         argocd.argoproj.io/sync-wave: "{{order}}"
+#     spec:
+#       project: default
+#       source:
+#         repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
+#         path: '{{path}}'
+#         targetRevision: main
+#         helm:
+#           releaseName: '{{releaseName}}'
 
-      destination:
-        name: eks-prod
-        namespace: 'logging'
-      syncPolicy:
-        automated: 
-          selfHeal: true
-          prune: true
-        syncOptions:
-          - CreateNamespace=false
+#       destination:
+#         name: eks-prod
+#         namespace: 'logging'
+#       syncPolicy:
+#         automated: 
+#           selfHeal: true
+#           prune: true
+#         syncOptions:
+#           - CreateNamespace=false
           
