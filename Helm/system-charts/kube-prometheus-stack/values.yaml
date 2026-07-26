@@ -1463,7 +1463,8 @@ grafana:
     ##
     # hosts:
     #   - grafana.domain.com
-    hosts: "grafana-todoapp.mycloudlab.website"
+    hosts: 
+      - grafana-todoapp.mycloudlab.website
 
     ## Path for grafana ingress
     path: /
