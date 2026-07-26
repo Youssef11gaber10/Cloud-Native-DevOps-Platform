@@ -23,9 +23,9 @@ spec:
 
   template:
     metadata:
-      name: '{{name}}'
       annotations:
         argocd.argoproj.io/sync-wave: "{{order}}"
+      name: '{{name}}'
     spec:
       project: default
       source:
@@ -34,27 +34,25 @@ spec:
         targetRevision: main
         helm:
           releaseName: '{{releaseName}}'
-
       destination:
         name: eks-prod
-        namespace: 'istio-system'
+        namespace: istio-system
       syncPolicy:
-        automated: 
+        automated:
           selfHeal: true
           prune: true
         syncOptions:
-          - CreateNamespace=false
-          
-    ignoreDifferences:
-    - group: admissionregistration.k8s.io
-      kind: ValidatingWebhookConfiguration
-      name: istio-validator-istio-system
-      jsonPointers:
-      - /webhooks/0/failurePolicy
-      - /webhooks/0/clientConfig/caBundle
-    - group: admissionregistration.k8s.io
-      kind: MutatingWebhookConfiguration
-      name: istio-sidecar-injector
-      jsonPointers:
-      - /webhooks/0/clientConfig/caBundle
+        - CreateNamespace=true
+      ignoreDifferences:
+      - group: admissionregistration.k8s.io
+        kind: ValidatingWebhookConfiguration
+        name: istio-validator-istio-system
+        jsonPointers:
+        - /webhooks/0/failurePolicy
+        - /webhooks/0/clientConfig/caBundle
+      - group: admissionregistration.k8s.io
+        kind: MutatingWebhookConfiguration
+        name: istio-sidecar-injector
+        jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
           
