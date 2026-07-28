@@ -9,7 +9,7 @@ RUN npm install
 COPY . .
 
 # needed in build time not in run time
-ENV REACT_APP_API_HOST="api" 
+ENV REACT_APP_API_HOST="/api" 
 
 RUN npm run build 
 # this is react app build folder called build if vite build folder called dist
