@@ -3,16 +3,15 @@ kind: ResourceQuota
 metadata:
   name: devops-app-quota
   namespace: devops-app
-
 spec:
   hard:
     # CPU
-    requests.cpu: "1"
-    limits.cpu: "4"
+    requests.cpu: "2"        # 2000m total requests across all pods
+    limits.cpu: "4"          # 4000m total limits across all pods
 
     # Memory
-    requests.memory: 2000Mi
-    limits.memory: 5000Mi
+    requests.memory: 2Gi
+    limits.memory: 4Gi
 
     # Storage
     requests.storage: 30Gi
