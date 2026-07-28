@@ -13,15 +13,17 @@ spec:
   http:
     - match:
         - uri:
-            prefix: /api # come from frontend code with origin/api goes to backend-svc:5000/ and rewrite uri from /api to /
+            prefix: /api
       rewrite:
-        uri: /
+        uriRegexRewrite:
+          match: '^/api(/.*)?$'
+          rewrite: '\1'
       route:
         - destination:
             host: {{ .Values.global.backend_host }}
             port:
               number: 5000
-
+  
     - match:
         - uri:
             prefix: /
