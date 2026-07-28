@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './Projects.css'
 import AddNewProject from './AddNewProject'
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000'
+import { baseUrl } from '../Shared/baseUrl'
 
 
 function ProjectCard({project}) {
@@ -37,7 +36,7 @@ export default function Projects() {
 
     const token = localStorage.getItem('token');
 
-    const url = `${API_URL}/projects/list`
+    const url = `${baseUrl}/projects/list`
     fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`

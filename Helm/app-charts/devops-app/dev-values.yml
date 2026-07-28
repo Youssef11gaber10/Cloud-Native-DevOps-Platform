@@ -1,0 +1,23 @@
+
+# this override default values in postgresql chart
+mysql: # this attribute are waiting for postgresql chart need him to start your bitname/postgres chart 
+  auth:
+    username: "infra_app"
+    database: "infra_platform"
+    # rootPassword: "changeme-root"
+    # password: "changeme-app"
+    existingSecret: "mysql-secret" # get password & postgres-password from secret created by external secret
+  image:
+      tag: "latest"
+
+################ end of mysql ################
+
+db_host: "mysql-svc" # here i set this in mysql chart and also read in backend 
+# db_port: "3306" # not changed so no need to override here 
+
+backend_host: "back-svc" # set in svc of backend chart and use it in frontend chart
+
+
+################### end of backend ################
+
+frontend_host: "front-svc"

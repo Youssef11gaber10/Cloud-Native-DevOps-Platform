@@ -1,0 +1,218 @@
+pipeline {
+    // agent none // not assign the pipeline to one agent it will run each stage  on any available agent 
+    agent { label "agent-1" }
+
+    environment {
+        PYTHON_VERSION = "3.12"
+        DOCKER_IMAGE   = "task-img-jenkins-ci"
+        ECR_REGISTRY   = "767196576807.dkr.ecr.eu-north-1.amazonaws.com"
+        CONTAINER_NAME = "jenkins-ci-container"
+        APP_PORT       = "8002"
+    }
+
+    options {
+        skipDefaultCheckout(false) // make checkout before each stage
+        disableConcurrentBuilds() // make sure only one pipeline run at a time
+    }
+
+    stages {
+        
+
+        // ---------- CI stages: run on PR (into dev or main) OR direct push to dev ----------
+
+        stage('Lint') {
+            when {
+                anyOf { // this like or  A or b or c any of then is true will run this job
+                    changeRequest target: 'dev'  // this like PR open/reopened/synchronize on dev
+                    changeRequest target: 'main' // this like PR open on main
+                    allOf {  // all of like and this true & this true 
+                        branch 'dev'
+                        changeset "app/**"
+                    }
+                    allOf {// change in app/** or docker file from dev is directly push or merged from feature to dev
+                        branch 'dev'
+                        changeset "Dockerfile"
+                    }
+                }
+            }
+            // Run this stage inside a Python container on an agent with label "agent-1".
+            // agent { docker { image "python:${PYTHON_VERSION}"  label "agent-1" } }
+            // agent { docker { image "python:${PYTHON_VERSION}" } }
+            agent {
+                docker {
+                    image "python:${PYTHON_VERSION}"
+                    label "agent-1"
+                }
+            }
+            environment {
+                HOME = "${WORKSPACE}"
+            }
+            steps {
+                sh 'python --version'
+                sh 'pip install --user ruff'
+                sh 'export PATH=$HOME/.local/bin:$PATH && ruff --version'
+                sh 'export PATH=$HOME/.local/bin:$PATH && ruff check .'
+            }
+        }
+
+        stage('Trivy FS + Config Scan') {
+            when {
+                anyOf {
+                    changeRequest target: 'dev'
+                    changeRequest target: 'main'
+                    allOf { branch 'dev'; changeset "app/**" }
+                    allOf { branch 'dev'; changeset "Dockerfile" }
+                }
+            }
+            agent {
+                docker {
+                    image 'aquasec/trivy:latest'
+                    args '--entrypoint=""' // for run trivy without docker entrypoint in gitlab -> entrypoint : [""]
+                    label "agent-1"
+                }
+            }
+            environment {
+                HOME = "${WORKSPACE}"
+            }
+            steps {
+                sh 'trivy fs --cache-dir ${WORKSPACE}/.trivy-cache --format table .'
+                sh 'trivy config --cache-dir ${WORKSPACE}/.trivy-cache --format table Dockerfile'
+            }
+            
+        }
+
+        stage('Build Image') {
+            when {
+                anyOf {
+                    changeRequest target: 'dev'
+                    changeRequest target: 'main'
+                    allOf { branch 'dev'; changeset "app/**" }
+                    allOf { branch 'dev'; changeset "Dockerfile" }
+                }
+            }
+            agent { label "agent-1"}
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE} ."
+                sh "docker save ${DOCKER_IMAGE} -o image.tar"
+                stash name: 'image-tar', includes: 'image.tar'
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            when {
+                anyOf {
+                    changeRequest target: 'dev'
+                    changeRequest target: 'main'
+                    allOf { branch 'dev'; changeset "app/**" }
+                    allOf { branch 'dev'; changeset "Dockerfile" }
+                }
+            }
+            agent {  label "agent-1" }
+            steps {
+                unstash 'image-tar'
+                sh "docker load -i image.tar"
+                sh '''
+                    mkdir -p ${WORKSPACE}/.trivy-cache
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${WORKSPACE}/.trivy-cache:/tmp/.cache \
+                      -e HOME=/tmp \
+                      -e XDG_CACHE_HOME=/tmp/.cache \
+                      aquasec/trivy:latest image ${DOCKER_IMAGE} --format table
+                '''
+            }
+        }
+
+        // ---------- Push to ECR: only on real push to dev (PR merged into dev) ----------
+
+        stage('Push to ECR') {
+            when {// This stage runs only after a real push to dev // (either a direct push or a merged PR).
+                allOf { // 1 and 2 and 3 are true to run this job
+                    branch 'dev'
+                    not { changeRequest() } // not PR OPEN  was directly push on dev or PR closed+merged ~ -> real push on dev
+                    anyOf { changeset "app/**"; changeset "Dockerfile" } // change in app/** or Dockerfile
+                }
+            }
+            agent { label "agent-1" }
+            steps {
+                unstash 'image-tar'
+                sh "docker load -i image.tar"
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+                        docker tag $DOCKER_IMAGE:latest $ECR_REGISTRY/$DOCKER_IMAGE:latest
+                        docker push $ECR_REGISTRY/$DOCKER_IMAGE:latest
+                    '''
+                }
+            }
+        }
+
+        // ---------- Deploy to dev: same condition as push-to-ecr, this IS "PR closed+merged into dev" ----------
+
+        stage('Deploy to Dev') {
+            when {
+                allOf {
+                    branch 'dev'
+                    not { changeRequest() }
+                    anyOf { changeset "app/**"; changeset "Dockerfile" }
+                }
+            }
+            agent { label "agent-1" }
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'DEPLOY_SSH_KEY', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
+                    string(credentialsId: 'DEPLOY_DEV_HOST', variable: 'DEPLOY_DEV_HOST')
+                    ]) {
+                    sh '''
+                        mkdir -p ~/.ssh
+                        ssh-keyscan -H $DEPLOY_DEV_HOST >> ~/.ssh/known_hosts
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "docker pull $ECR_REGISTRY/$DOCKER_IMAGE:latest"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "docker rm -f $CONTAINER_NAME || true"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "docker run -d --name $CONTAINER_NAME -p $APP_PORT:8000 $ECR_REGISTRY/$DOCKER_IMAGE:latest"
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=accept-new \$DEPLOY_USER@\$DEPLOY_DEV_HOST 'for i in \$(seq 1 10); do curl -sf http://localhost:\$APP_PORT/health && break || sleep 2; done'
+                    '''
+                }
+            }
+        }
+
+        // ---------- Deploy to prod: only on push to main (PR closed+merged into main), no rebuild ----------
+
+        stage('Deploy to Prod') {
+            when {
+                allOf {// 1 and 2 are true
+                    branch 'main' // push to main or equivelent like PR closed+ merged into main
+                    not { changeRequest() } // not PR OPEN
+                }
+            }
+            agent { label "agent-1" }
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'DEPLOY_SSH_KEY', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
+                    string(credentialsId: 'DEPLOY_PROD_HOST', variable: 'DEPLOY_PROD_HOST')
+                ]) {
+                    sh '''
+                        mkdir -p ~/.ssh
+                        ssh-keyscan -H $DEPLOY_PROD_HOST >> ~/.ssh/known_hosts
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "docker pull $ECR_REGISTRY/$DOCKER_IMAGE:latest"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "docker rm -f $CONTAINER_NAME || true"
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "docker run -d --name $CONTAINER_NAME -p $APP_PORT:8000 $ECR_REGISTRY/$DOCKER_IMAGE:latest"
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=accept-new \$DEPLOY_USER@\$DEPLOY_PROD_HOST 'for i in \$(seq 1 10); do curl -sf http://localhost:\$APP_PORT/health && break || sleep 2; done'
+
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh 'docker image prune -af || true'
+        }
+    }
+
+}

@@ -1,0 +1,12 @@
+dependencies:
+- name: front-chart
+  repository: file://charts/front-chart
+  version: 0.1.0
+- name: back-chart
+  repository: file://charts/back-chart
+  version: 0.1.0
+- name: mysql
+  repository: file://charts/mysql
+  version: 14.0.3
+digest: sha256:ac7784c687c5697e7edd78c27356994c23b0f7313daab566bf665a30a6c6754b
+generated: "2026-07-27T06:08:43.899875199+03:00"

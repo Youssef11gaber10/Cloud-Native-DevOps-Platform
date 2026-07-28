@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+metadata:
+  name: front-cm
+  labels:
+{{ include "back-chart.labels" . | nindent 4 }}
+data:
+    REACT_APP_API_HOST: {{ .Values.backend_host }}
+    REACT_APP_API_PORT: "5000"
+

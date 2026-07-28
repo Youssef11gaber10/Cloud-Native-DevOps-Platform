@@ -1,0 +1,23 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+    name: devops-app-gateway
+annotations:
+    external-dns.alpha.kubernetes.io/hostname: devops-app.mycloudlab.website
+
+
+spec:
+    selector:
+        istio: ingressgateway # select pod with label `istio=ingressgateway` -> pod of istio-ingressgateway deployment
+    
+    servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+    #   - "*" # allow all hosts
+        - "devops-app.mycloudlab.website"
+
+
+

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 export default function ExistingDockerfileForm({ serviceId, onBack, onDone }) {
   const [dockerfilePath, setDockerfilePath] = useState('Dockerfile');
@@ -15,7 +14,7 @@ export default function ExistingDockerfileForm({ serviceId, onBack, onDone }) {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`${API_URL}/dockerize/existing`, {
+      const response = await fetch(`${baseUrl}/dockerize/existing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

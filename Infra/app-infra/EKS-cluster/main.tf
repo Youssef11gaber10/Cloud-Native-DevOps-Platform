@@ -6,6 +6,17 @@ module "cluster-vpc" {
   region                = var.region
 }
 
+module "rds-prod" {
+
+  source                 = "./modules/rds_module"
+  db_name                = "infra_platform"
+  db_user_username       = "infra_app"
+  vpc_id                 = module.cluster-vpc.NM_vpc_id
+  NM_private_subnets_ids = module.cluster-vpc.NM_private_subnet_ids
+  db_password            = var.rds_db_password
+}
+
+
 module "eks" {
   source          = "./modules/eks_module"
   vpc_id          = module.cluster-vpc.NM_vpc_id

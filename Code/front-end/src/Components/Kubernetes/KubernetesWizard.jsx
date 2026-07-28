@@ -14,8 +14,7 @@ import {
   StepHealthChecks,
   StepAutoscaling,
 } from './WizardSteps';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 const STEPS = [
   { key: 'application', title: 'Application', Component: StepApplication },
@@ -56,7 +55,7 @@ export default function KubernetesWizard() {
     setLoading(true);
     setLoadError(null);
 
-    fetch(`${API_URL}/services/get/${serviceId}`, { headers: authHeaders })
+    fetch(`${baseUrl}/services/get/${serviceId}`, { headers: authHeaders })
       .then((res) => {
         if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
         return res.json();
@@ -83,7 +82,7 @@ export default function KubernetesWizard() {
       .finally(() => setLoading(false));
 
     // Pre-fill from a previously saved wizard config, if one exists.
-    fetch(`${API_URL}/services/${serviceId}/k8s/get`, { headers: authHeaders })
+    fetch(`${baseUrl}/services/${serviceId}/k8s/get`, { headers: authHeaders })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data?.config) return;
@@ -113,7 +112,7 @@ export default function KubernetesWizard() {
       })
       .catch(() => {}); // no saved config yet — fine, wizard stays at defaults
 
-    fetch(`${API_URL}/github/tokens`, { headers: authHeaders })
+    fetch(`${baseUrl}/github/tokens`, { headers: authHeaders })
       .then((res) => (res.ok ? res.json() : { tokens: [] }))
       .then((data) => {
         const tokens = data.tokens || [];
@@ -140,7 +139,7 @@ export default function KubernetesWizard() {
 
   async function callGenerate(dryRun) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/services/${serviceId}/k8s/generate`, {
+    const response = await fetch(`${baseUrl}/services/${serviceId}/k8s/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

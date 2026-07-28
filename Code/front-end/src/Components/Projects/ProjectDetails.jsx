@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ServiceCard, ServiceCreateModal } from '../Services';
 import './Projects.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 export default function ProjectDetails() {
   const { projectId } = useParams();
@@ -25,7 +24,7 @@ export default function ProjectDetails() {
     setLoading(true);
     setError(null);
 
-    fetch(`${API_URL}/projects/get/${projectId}`, {
+    fetch(`${baseUrl}/projects/get/${projectId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -51,7 +50,7 @@ export default function ProjectDetails() {
     setLoading(true);
     setError(null);
 
-    fetch(`${API_URL}/services/list/${projectId}`, {
+    fetch(`${baseUrl}/services/list/${projectId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -97,7 +96,7 @@ export default function ProjectDetails() {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`${API_URL}/services/create/${projectId}`, {
+      const response = await fetch(`${baseUrl}/services/create/${projectId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

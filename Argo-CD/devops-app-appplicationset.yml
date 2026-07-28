@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-app-applicationset
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - order: "1"
+            name: prod-devops-app
+            path: ./Helm/app-charts/devops-app
+            values_file: prod-values.yml
+            cluster_name: eks-prod
+          - order: "2"
+            name: dev-devops-app
+            values_file: dev-values.yml
+            cluster_name: kops-dev
+
+
+
+  template:
+    metadata:
+      name: '{{name}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{order}}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
+        path: '{{path}}'
+        targetRevision: main
+        helm:
+          releaseName: devops-app-release
+          values: '{{values_file}}'
+
+      destination:
+        name: '{{cluster_name}}'
+        namespace: 'devops-app'
+      syncPolicy:
+        automated: 
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=false
+          

@@ -17,7 +17,7 @@ async function start() {
     console.log('✅ Connected to MySQL');
 
     // await sequelize.sync({ alter: true });
-    await sequelize.sync({ alter: true });
+    // await sequelize.sync({ alter: true });
     console.log('✅ Users table synced');
 
     app.listen(PORT,  '0.0.0.0' , () => { // make app listion on 0.0.0.0 all interfaces on machine not only localhost

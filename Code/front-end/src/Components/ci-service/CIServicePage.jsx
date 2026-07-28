@@ -4,8 +4,7 @@ import '../Projects/Projects.css';
 import './ci-service.css';
 import SecretForm from './SecretForm';
 import CIForm from './CIForm';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 export default function CIServicePage() {
     const { projectId, serviceId } = useParams();
@@ -51,7 +50,7 @@ export default function CIServicePage() {
             setLoading(true);
             setError('');
             try {
-                const response = await fetch(`${API_URL}/services/get/${serviceId}`, { headers: authHeaders });
+                const response = await fetch(`${baseUrl}/services/get/${serviceId}`, { headers: authHeaders });
                 const data = await response.json().catch(() => null);
                 if (!response.ok) throw new Error(data?.message || 'Unable to load service.');
                 const serviceData = data.service || data || null;
@@ -190,7 +189,7 @@ export default function CIServicePage() {
         }
 
         try {
-            const response = await fetch(`${API_URL}/services/${serviceId}/ci/create`, {
+            const response = await fetch(`${baseUrl}/services/${serviceId}/ci/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...authHeaders },
                 body: JSON.stringify({
@@ -216,7 +215,7 @@ export default function CIServicePage() {
         setStatusMessage('');
 
         try {
-            const response = await fetch(`${API_URL}/services/${serviceId}/ci/preview`, { headers: authHeaders });
+            const response = await fetch(`${baseUrl}/services/${serviceId}/ci/preview`, { headers: authHeaders });
             const data = await response.json().catch(() => null);
             if (!response.ok) throw new Error(data?.message || 'Unable to preview workflow.');
             setPreviewYaml(data?.workflow?.yaml || '');
@@ -236,7 +235,7 @@ export default function CIServicePage() {
         setStatusMessage('');
 
         try {
-            const response = await fetch(`${API_URL}/services/${serviceId}/ci/push`, {
+            const response = await fetch(`${baseUrl}/services/${serviceId}/ci/push`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...authHeaders },
                 body: JSON.stringify({}),
@@ -271,7 +270,7 @@ export default function CIServicePage() {
         }
 
         try {
-            const response = await fetch(`${API_URL}/services/${serviceId}/ci/secrets`, {
+            const response = await fetch(`${baseUrl}/services/${serviceId}/ci/secrets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...authHeaders },
                 body: JSON.stringify({

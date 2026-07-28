@@ -1,0 +1,16 @@
+
+# this override default values in postgresql chart
+# but this not related to bitname/postgres chart default values 
+# because  postgresql is dependency chart so when do enabled: false it will not install the subchart 
+mysql: # this attribute are waiting for postgresql chart need him to start your bitname/postgres chart 
+  enabled: false # disable postgresql chart on production environment will use RDS 
+
+################## end of postgresql ################
+
+db_host: "terraform-20260728001057683400000004.c52e88koezpq.eu-north-1.rds.amazonaws.com"
+
+backend_host: "back-svc" # set in svc of backend chart and use it in frontend chart
+
+################### end of backend ################
+
+frontend_host: "front-svc"

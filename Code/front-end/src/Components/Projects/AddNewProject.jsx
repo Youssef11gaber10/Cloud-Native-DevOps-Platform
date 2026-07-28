@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 export default function AddNewProject({ onCreated }) {
   const [open, setOpen] = useState(false);
@@ -33,7 +32,7 @@ export default function AddNewProject({ onCreated }) {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`${API_URL}/projects/create`, {
+      const response = await fetch(`${baseUrl}/projects/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

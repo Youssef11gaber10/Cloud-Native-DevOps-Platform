@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 export default function AddNewToken({ onCreated }) {
   const [open, setOpen] = useState(false);
@@ -35,7 +34,7 @@ export default function AddNewToken({ onCreated }) {
     const authToken = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`${API_URL}/github/tokens`, {
+      const response = await fetch(`${baseUrl}/github/tokens`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../Projects/Projects.css'; // reuse the same visual style as Projects
 import AddNewToken from './AddNewToken';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 
 function TokenCard({ tokenData, onDelete }) {
   const id = tokenData.id || tokenData._id;
@@ -43,7 +42,7 @@ export default function GithubTokens() {
 
     const token = localStorage.getItem('token');
 
-    fetch(`${API_URL}/github/tokens`, {
+    fetch(`${baseUrl}/github/tokens`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -68,7 +67,7 @@ export default function GithubTokens() {
 
     const authToken = localStorage.getItem('token');
 
-    fetch(`${API_URL}/github/tokens/${id}`, {
+    fetch(`${baseUrl}/github/tokens/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${authToken}` },
     })

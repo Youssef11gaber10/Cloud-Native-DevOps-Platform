@@ -60,3 +60,7 @@ variable "grafana_admin_password" {
   type      = string
   sensitive = true
 }
+
+variable "rds_db_password" {
+  type = string
+}

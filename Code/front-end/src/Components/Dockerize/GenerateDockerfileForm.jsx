@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import reloadIcon from '../../finalProject assets/reload.jpg';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { baseUrl } from '../Shared/baseUrl';
 const LANGUAGES = [
   { value: 'node', label: 'Node.js' },
   { value: 'python', label: 'Python' },
@@ -31,7 +30,7 @@ export default function GenerateDockerfileForm({ serviceId, onBack, onDone }) {
     const token = localStorage.getItem('token');
     setLoadingTokens(true);
 
-    fetch(`${API_URL}/github/tokens`, {
+    fetch(`${baseUrl}/github/tokens`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -47,7 +46,7 @@ export default function GenerateDockerfileForm({ serviceId, onBack, onDone }) {
 
     const token = localStorage.getItem('token');
 
-    fetch(`${API_URL}/dockerize/defaults/${lang}`, {
+    fetch(`${baseUrl}/dockerize/defaults/${lang}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -82,7 +81,7 @@ export default function GenerateDockerfileForm({ serviceId, onBack, onDone }) {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`${API_URL}/dockerize/generate`, {
+      const response = await fetch(`${baseUrl}/dockerize/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
