@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.frontend_host }}
+  name: {{ .Values.global.frontend_host }}
   labels:
     {{- include "front-chart.labels" . | nindent 4 }}
 spec:

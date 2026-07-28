@@ -1,18 +1,21 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-    name: devops-app-vs
+  name: devops-app-vs
+
 spec:
-    gateways:
-        - devops-app-gateway
-    hosts:
-        - "devops-app.mycloudlab.website"
-    http:
-        - match:
-                - uri:
-                        prefix: /
-            route:
-                - destination:
-                        host: {{ .Values.frontend_host }}
-                        port:
-                            number: 8080
+  gateways:
+    - devops-app-gateway
+
+  hosts:
+    - devops-app.mycloudlab.website
+
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: {{ .Values.global.frontend_host }}
+            port:
+              number: 8080

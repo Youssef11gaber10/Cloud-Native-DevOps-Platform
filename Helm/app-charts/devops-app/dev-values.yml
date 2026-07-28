@@ -7,17 +7,23 @@ mysql: # this attribute are waiting for postgresql chart need him to start your 
     # rootPassword: "changeme-root"
     # password: "changeme-app"
     existingSecret: "mysql-secret" # get password & postgres-password from secret created by external secret
-  image:
-      tag: "latest"
 
+
+  primary:
+    persistence:
+      enabled: true
+      storageClass: gp2
+      size: 8Gi
 ################ end of mysql ################
 
-db_host: "mysql-svc" # here i set this in mysql chart and also read in backend 
-# db_port: "3306" # not changed so no need to override here 
+global:
 
-backend_host: "back-svc" # set in svc of backend chart and use it in frontend chart
+  db_host: "mysql-svc" # here i set this in mysql chart and also read in backend 
+  # db_port: "3306" # not changed so no need to override here 
+
+  backend_host: "back-svc" # set in svc of backend chart and use it in frontend chart
 
 
-################### end of backend ################
+  ################### end of backend ################
 
-frontend_host: "front-svc"
+  frontend_host: "front-svc"
