@@ -1,6 +1,7 @@
 
 # this override default values in postgresql chart
 mysql: # this attribute are waiting for postgresql chart need him to start your bitname/postgres chart 
+  enabled: true # enable the subchart in dev environment, false to disable it in prod and rely on rds
   auth:
     username: "infra_app"
     database: "infra_platform"

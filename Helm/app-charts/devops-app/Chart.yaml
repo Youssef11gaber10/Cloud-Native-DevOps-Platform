@@ -33,4 +33,5 @@ dependencies:
   - name: mysql
     version: 14.0.3
     repository: file://charts/mysql
+    condition: mysql.enabled
 

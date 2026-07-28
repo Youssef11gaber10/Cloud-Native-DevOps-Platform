@@ -18,8 +18,8 @@ spec:
 
     min:
       cpu: 25m
-      memory: 256Mi
+      memory: 64Mi
 
     max:
-      cpu: 500m
+      cpu: 2000m
       memory: 1000Mi
