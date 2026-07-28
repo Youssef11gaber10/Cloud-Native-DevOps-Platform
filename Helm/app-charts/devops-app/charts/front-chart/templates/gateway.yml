@@ -8,7 +8,7 @@ metadata:
 
 spec:
     selector:
-        istio: ingressgateway # select pod with label `istio=ingressgateway` -> pod of istio-ingressgateway deployment
+        istio: gateway  # select pod with label `istio=ingressgateway` -> pod of istio-ingressgateway deployment
     
     servers:
     - port:

@@ -25,6 +25,6 @@ mysql:
   enabled: false
 
 global:
-  db_host: "terraform-20260728001057683400000004.c52e88koezpq.eu-north-1.rds.amazonaws.com"
+  db_host: "terraform-20260728033650715500000004.c52e88koezpq.eu-north-1.rds.amazonaws.com"
   backend_host: "back-svc"
   frontend_host: "front-svc"

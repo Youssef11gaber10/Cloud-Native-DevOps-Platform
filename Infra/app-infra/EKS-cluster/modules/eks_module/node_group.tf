@@ -1,3 +1,33 @@
+resource "aws_launch_template" "node_group_lt" {
+  for_each = var.node_groups
+
+
+  name_prefix = "${var.cluster_name}-node-lt-"
+
+  vpc_security_group_ids = [aws_security_group.worker_node_sg.id]
+
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size = each.value.disk_size
+      volume_type = "gp3"
+    }
+  }
+
+
+  # Optional but recommended: tag the instances/volumes created by this LT
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "${var.cluster_name}-${each.key}-node"
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # create Iam Role for node group 
 resource "aws_iam_role" "node_group_role" {
   name = "${var.cluster_name}-node-group-role"
@@ -45,12 +75,17 @@ resource "aws_eks_node_group" "node_group" {
   instance_types = each.value.instance_types
   capacity_type  = each.value.capacity_type
 
-  disk_size = each.value.disk_size
+  # disk_size = each.value.disk_size
 
   scaling_config {
     desired_size = each.value.desired_size
     min_size     = each.value.min_size
     max_size     = each.value.max_size
+  }
+
+   launch_template {
+    id      = aws_launch_template.node_group_lt[each.key].id
+    version = "$Latest"
   }
 
   #   labels = each.value.labels
