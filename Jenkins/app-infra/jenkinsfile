@@ -22,7 +22,7 @@ pipeline {
         KOPS_CLUSTER_NAME = 'kops-argo'
         KOPS_STATE_STORE  = 's3://kops-argo-cluster-state-s3'
         AWS_REGION_KOPS        = 'eu-central-1'
-        ARGOCD_EKS_CLUSTER_NAME = 'eks-prod-cluster'
+        ARGOCD_EKS_CLUSTER_NAME = 'eks-prod'
         ROOT_APP_NAME     = 'root-app'
 
 
