@@ -234,10 +234,11 @@ pipeline {
         // the deployed app will still have the old/placeholder db_host.
         stage('GitOps: Push Updated prod-values.yml') {
             agent {
-                docker {
-                    image 'alpine/git:latest'
-                    label 'agent-1'
-                }
+                docker { 
+                            image 'hashicorp/terraform:1.15.8'
+                            label 'agent-1' 
+                            args '--entrypoint=""'
+                            } 
             }
             steps {
                 withCredentials([
@@ -318,8 +319,10 @@ pipeline {
                             kops create cluster \
                             --node-count=3 \
                             --node-size=t3.small \
+                            --node-volume-size=30 \
                             --zones=${AWS_REGION_KOPS}a,${AWS_REGION_KOPS}b,${AWS_REGION_KOPS}c \
                             --master-size=t3.small \
+                            --master-volume-size=30 \
                             --master-zones=${AWS_REGION_KOPS}a \
                             --ssh-public-key=${KOPS_PUB_KEY} \
                             --yes
