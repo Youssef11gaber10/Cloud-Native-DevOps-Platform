@@ -182,7 +182,9 @@ pipeline {
 
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PAT')
+
                 ]) 
                 {
                     dir("${TF_DIR_EKS}") {
@@ -223,32 +225,10 @@ pipeline {
 
                         echo "===== updated global section ====="
                         grep -A5 "^global:" "${PROD_VALUES_FILE}" || true
-                    '''
-                }
-            }
-        }
 
 
-// ---------- Step 4b: push updated prod-values.yml back to the GitOps repo ----------
-        // This must happen BEFORE ArgoCD applies root-app.yml (Step 17), otherwise
-        // the deployed app will still have the old/placeholder db_host.
-        stage('GitOps: Push Updated prod-values.yml') {
-            agent {
-                docker { 
-                            image 'hashicorp/terraform:1.15.8'
-                            label 'agent-1' 
-                            args '--entrypoint=""'
-                            } 
-            }
-            steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PAT')
-                ]) {
-                    sh '''
-                        set -euo pipefail
 
-                        ls -lah 
-
+                        echo "===== push to repo  ====="
                         git config user.email "jenkins@ci.local"
                         git config user.name "Jenkins CI"
 
@@ -273,6 +253,7 @@ pipeline {
                 }
             }
         }
+
 
 
 
