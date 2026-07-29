@@ -124,7 +124,7 @@ pipeline {
                 ]) 
                 {
                     dir("${TF_DIR_EKS}") {
-                        sh 'terraform plan -var="rds_db_password=${DB_RDS_PASSWORD}" -var="aws_region=${AWS_REGION_KOPS}" -out=tfplan'
+                        sh 'terraform plan -var="rds_db_password=${DB_RDS_PASSWORD}"  -out=tfplan'
                         sh 'cat tfplan'
                     }
                     // stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan" # no need to stash tfplan it already remain in workspace of container to next stage
