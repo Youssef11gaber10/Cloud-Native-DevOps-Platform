@@ -120,10 +120,11 @@ pipeline {
                                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'DB_RDS_PASSWORD', variable: 'DB_RDS_PASSWORD')
                 ]) 
                 {
                     dir("${TF_DIR_EKS}") {
-                        sh 'terraform plan -out=tfplan'
+                        sh 'terraform plan -var="rds_db_password=${DB_RDS_PASSWORD}" -var="aws_region=${AWS_REGION_KOPS}" -out=tfplan'
                         sh 'cat tfplan'
                     }
                     // stash name: 'tfplan-eks', includes: "${TF_DIR_EKS}/tfplan" # no need to stash tfplan it already remain in workspace of container to next stage
@@ -151,12 +152,14 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'DB_RDS_PASSWORD', variable: 'DB_RDS_PASSWORD')
+
                 ]) 
                 {
                     dir("${TF_DIR_EKS}") {
                         sh 'ls -lah tfplan'
                         sh 'cat tfplan'
-                        sh 'terraform apply -auto-approve tfplan'
+                        sh 'terraform apply -var="rds_db_password=${DB_RDS_PASSWORD}" -auto-approve tfplan'
                     }
                 }
             }
@@ -225,6 +228,48 @@ pipeline {
             }
         }
 
+
+// ---------- Step 4b: push updated prod-values.yml back to the GitOps repo ----------
+        // This must happen BEFORE ArgoCD applies root-app.yml (Step 17), otherwise
+        // the deployed app will still have the old/placeholder db_host.
+        stage('GitOps: Push Updated prod-values.yml') {
+            agent {
+                docker {
+                    image 'alpine/git:latest'
+                    label 'agent-1'
+                }
+            }
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PAT')
+                ]) {
+                    sh '''
+                        set -euo pipefail
+
+                        git config user.email "jenkins@ci.local"
+                        git config user.name "Jenkins CI"
+
+                        git status
+                        git add "${PROD_VALUES_FILE}"
+
+                        if git diff --cached --quiet; then
+                            echo "No changes to ${PROD_VALUES_FILE}, nothing to push."
+                            exit 0
+                        fi
+
+                        git commit -m "ci: update global.db_host with RDS endpoint (build #${BUILD_NUMBER})"
+
+                        CURRENT_BRANCH=main
+                        echo "Pushing to branch: ${CURRENT_BRANCH}"
+
+                        # strip https:// so we can inject the PAT credentials into the push URL
+                        REPO_URL_NO_SCHEME=$(echo "${GIT_REPO_URL}" | sed -E 's#^https://##')
+
+                        git push "https://${GIT_USERNAME}:${GIT_PAT}@${REPO_URL_NO_SCHEME}" "HEAD:${CURRENT_BRANCH}"
+                    '''
+                }
+            }
+        }
 
 
 
