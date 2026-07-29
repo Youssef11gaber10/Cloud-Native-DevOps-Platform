@@ -83,7 +83,7 @@ resource "aws_eks_node_group" "node_group" {
     max_size     = each.value.max_size
   }
 
-   launch_template {
+  launch_template {
     id      = aws_launch_template.node_group_lt[each.key].id
     version = "$Latest"
   }

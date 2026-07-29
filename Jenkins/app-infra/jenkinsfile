@@ -2,8 +2,7 @@ pipeline {
     agent { label "agent-1" }
 
     parameters {
-        // Step 16: repo add is only ever run when this is true. Leave false for a
-        // public repo — ArgoCD reads it directly with no credentials at all.
+
         booleanParam(
             name: 'PRIVATE_REPO',
             defaultValue: false,
@@ -18,12 +17,14 @@ pipeline {
 
     environment {
         TF_DIR_EKS        = "Infra/app-infra/EKS-cluster"
+        PROD_VALUES_FILE = "Helm/app-charts/devops-app/prod-values.yml"   
         DEVOPS_IMAGE      = "youssef11gaber10/kops:latest"
         KOPS_CLUSTER_NAME = 'kops-argo'
         KOPS_STATE_STORE  = 's3://kops-argo-cluster-state-s3'
         AWS_REGION_KOPS        = 'eu-central-1'
         ARGOCD_EKS_CLUSTER_NAME = 'eks-prod-cluster'
         ROOT_APP_NAME     = 'root-app'
+
 
     }
 
@@ -73,6 +74,7 @@ pipeline {
                 ])
             {
                 dir("${TF_DIR_EKS}") {
+                    sh 'terraform fmt -recursive ./'
                     sh 'terraform fmt -check -recursive'
                 }
 
@@ -161,10 +163,13 @@ pipeline {
         }
 
         // ---------- Step 4: capture Terraform outputs ----------
-        // Cluster name/endpoint are needed later for `aws eks update-kubeconfig` and
-        // `argocd cluster add`. None of this is secret, so a plain stashed file is fine.
-        stage('EKS: Capture Terraform Outputs') {
-            agent { docker { 
+// ---------- Step 4: capture Terraform outputs ----------
+        // Cluster name/endpoint/RDS endpoint are needed later for `aws eks update-kubeconfig`,
+        // `argocd cluster add`, and to inject the RDS host into prod-values.yml.
+        // None of this is secret, so a plain stashed file is fine.
+        stage('EKS: Capture Terraform Outputs & update rds endpoint in prod-values.yml') {
+            agent { 
+                docker { 
                             image 'hashicorp/terraform:1.15.8'
                             label 'agent-1' 
                             args '--entrypoint=""'
@@ -184,15 +189,45 @@ pipeline {
                             {
                             echo "EKS_CLUSTER_NAME=$(terraform output -raw cluster_name)"
                             echo "EKS_API_SERVER=$(terraform output -raw cluster_endpoint)"
+                            echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)"
                             } > eks-outputs.env
                         '''
                     }
                     // stash name: 'eks-outputs', includes: "${TF_DIR_EKS}/eks-outputs.env"
                     // no need to stash eks-outputs.env it already remain in workspace of container to next stage
 
+                    // ---- inject RDS endpoint into prod-values.yml (global.db_host) ----
+                    sh '''
+                        set -euo pipefail
+
+                        . "${TF_DIR_EKS}/eks-outputs.env"
+
+                        echo "RDS_ENDPOINT raw value: ${RDS_ENDPOINT}"
+
+                        # rds_endpoint from terraform includes the port (host:port).
+                        # db_host in prod-values.yml expects only the hostname, so strip the port.
+                        RDS_HOST="${RDS_ENDPOINT%%:*}"
+
+                        if [ ! -f "${PROD_VALUES_FILE}" ]; then
+                            echo "ERROR: ${PROD_VALUES_FILE} not found in workspace" >&2
+                            exit 1
+                        fi
+
+                        echo "Setting global.db_host = ${RDS_HOST} in ${PROD_VALUES_FILE}"
+
+                        # Replace the db_host line under global:, preserving indentation.
+                        sed -i -E "s|^([[:space:]]*db_host:).*|\\1 \\"${RDS_HOST}\\"|" "${PROD_VALUES_FILE}"
+
+                        echo "===== updated global section ====="
+                        grep -A5 "^global:" "${PROD_VALUES_FILE}" || true
+                    '''
                 }
             }
         }
+
+
+
+
 
         // ---------- Step 7: second manual approval, before creating the kops cluster ----------
         stage('Argo: Manual Approval') {

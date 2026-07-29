@@ -30,6 +30,7 @@ resource "aws_efs_file_system" "ci_master_data" {
 }
 
 
+# comment this when import the efs again 
 resource "aws_efs_mount_target" "ci_master_data_mt" {
   # toset -> convert list to set cause for each accept sets & map not list 
 
