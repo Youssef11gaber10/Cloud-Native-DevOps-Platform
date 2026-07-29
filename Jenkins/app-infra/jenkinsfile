@@ -246,6 +246,8 @@ pipeline {
                     sh '''
                         set -euo pipefail
 
+                        ls -lah 
+
                         git config user.email "jenkins@ci.local"
                         git config user.name "Jenkins CI"
 

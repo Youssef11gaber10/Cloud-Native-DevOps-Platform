@@ -14,6 +14,8 @@ module "rds-prod" {
   vpc_id                 = module.cluster-vpc.NM_vpc_id
   NM_private_subnets_ids = module.cluster-vpc.NM_private_subnet_ids
   db_password            = var.rds_db_password
+  depends_on = [module.cluster-vpc]
+
 }
 
 
