@@ -39,6 +39,7 @@ spec:
         repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
         path: 'Helm/app-charts/devops-app'
         targetRevision: '{{.branch}}'
+
         helm:
           releaseName: devops-app-release
           valueFiles:
