@@ -312,14 +312,22 @@ pipeline {
 def gitOpsBumpTag(String valuesFile) {
     if (env.FRONT_CHANGED == 'true') {
         sh """
-            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
-              -i '.front-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
+            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest -i '
+                .global.front_canary_enabled = true |
+                .global.front_canary_image.tag = "${env.IMAGE_TAG}" |
+                .global.front_canary_weight.stable = 90 |
+                .global.front_canary_weight.canary = 10
+            ' ${valuesFile}
         """
     }
     if (env.BACK_CHANGED == 'true') {
         sh """
-            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
-              -i '.back-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
+            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest -i '
+                .global.back_canary_enabled = true |
+                .global.back_canary_image.tag = "${env.IMAGE_TAG}" |
+                .global.back_canary_weight.stable = 90 |
+                .global.back_canary_weight.canary = 10
+            ' ${valuesFile}
         """
     }
     withCredentials([usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
@@ -327,8 +335,10 @@ def gitOpsBumpTag(String valuesFile) {
             git config user.email "jenkins-ci@pipeline"
             git config user.name "jenkins-ci"
             git add ${valuesFile}
-            git commit -m "build ${env.IMAGE_TAG} -> ${valuesFile} [ci skip]" || echo "nothing to commit"
+            git commit -m "canary: bump ${env.IMAGE_TAG} -> ${valuesFile}, reset split to 90/10" || echo "nothing to commit"
+            git pull --rebase https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git ${env.BRANCH_NAME}
             git push https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git HEAD:${env.BRANCH_NAME}
         """
     }
+}
 }
