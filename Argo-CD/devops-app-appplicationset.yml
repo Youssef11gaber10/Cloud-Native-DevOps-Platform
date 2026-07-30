@@ -22,11 +22,11 @@ spec:
             namespace: 'staging-devops-app'
             autosync: true
 
-          - name: dev-devops-app
-            values_file: dev-values.yml
-            cluster_name: kops-dev
-            namespace: 'devops-app'
-            autosync: true
+          # - name: dev-devops-app
+          #   values_file: dev-values.yml
+          #   cluster_name: kops-dev
+          #   namespace: 'devops-app'
+          #   autosync: true
 
   template:
     metadata:
