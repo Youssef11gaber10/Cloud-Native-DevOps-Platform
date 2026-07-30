@@ -1,4 +1,4 @@
-{{- if .Values.global.front_canary_enabled -}}
+{{- if .Values.global.front_canary_enabled }}
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
