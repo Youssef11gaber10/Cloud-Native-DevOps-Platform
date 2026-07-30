@@ -21,8 +21,21 @@
 
 
 
+
 mysql:
   enabled: false
+
+
+back-chart:
+  image:
+    repository: "youssef11gaber10/gp-back"
+    tag: "latest"
+    
+
+front-chart:
+  image:
+    repository: "youssef11gaber10/gp-front"
+    tag: "latest"
 
 global:
   db_host: "terraform-20260729043518941300000004.c52e88koezpq.eu-north-1.rds.amazonaws.com"

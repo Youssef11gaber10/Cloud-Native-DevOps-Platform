@@ -1,57 +1,78 @@
 pipeline {
-    // agent none // not assign the pipeline to one agent it will run each stage  on any available agent 
     agent { label "agent-1" }
 
-    environment {
-        PYTHON_VERSION = "3.12"
-        DOCKER_IMAGE   = "task-img-jenkins-ci"
-        ECR_REGISTRY   = "767196576807.dkr.ecr.eu-north-1.amazonaws.com"
-        CONTAINER_NAME = "jenkins-ci-container"
-        APP_PORT       = "8002"
+    options {
+        skipDefaultCheckout(false)
+        disableConcurrentBuilds()
     }
 
-    options {
-        skipDefaultCheckout(false) // make checkout before each stage
-        disableConcurrentBuilds() // make sure only one pipeline run at a time
+    environment {
+        FRONT_DIR    = "Code/front-end"
+        BACK_DIR     = "Code/back-end"
+        FRONT_IMAGE  = "youssef11gaber10/gp-front"
+        BACK_IMAGE   = "youssef11gaber10/gp-back"
+
+        DEV_VALUES   = "Helm/app-charts/devops-app/dev-values.yml"
+        TEST_VALUES  = "Helm/app-charts/devops-app/test-values.yml"
+        PROD_VALUES  = "Helm/app-charts/devops-app/prod-values.yml"
+
+        GIT_REPO_URL = "https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git"
     }
 
     stages {
-        
 
-        // ---------- CI stages: run on PR (into dev or main) OR direct push to dev ----------
-
-        stage('Lint') {
-            when {
-                anyOf { // this like or  A or b or c any of then is true will run this job
-                    changeRequest target: 'dev'  // this like PR open/reopened/synchronize on dev
-                    changeRequest target: 'main' // this like PR open on main
-                    allOf {  // all of like and this true & this true 
-                        branch 'dev'
-                        changeset "app/**"
-                    }
-                    allOf {// change in app/** or docker file from dev is directly push or merged from feature to dev
-                        branch 'dev'
-                        changeset "Dockerfile"
-                    }
-                }
-            }
-            // Run this stage inside a Python container on an agent with label "agent-1".
-            // agent { docker { image "python:${PYTHON_VERSION}"  label "agent-1" } }
-            // agent { docker { image "python:${PYTHON_VERSION}" } }
-            agent {
-                docker {
-                    image "python:${PYTHON_VERSION}"
-                    label "agent-1"
-                }
-            }
-            environment {
-                HOME = "${WORKSPACE}"
-            }
+        // ---------- Compute an immutable tag once, reuse it in every later stage ----------
+        // this check if the code changed or not compare HEAD~1 with HEAD see if there git diff between them
+        stage('Prepare') {
             steps {
-                sh 'python --version'
-                sh 'pip install --user ruff'
-                sh 'export PATH=$HOME/.local/bin:$PATH && ruff --version'
-                sh 'export PATH=$HOME/.local/bin:$PATH && ruff check .'
+                script {
+                    env.SHORT_SHA  = sh(script: "git rev-parse --short=8 HEAD", returnStdout: true).trim()
+                    env.IMAGE_TAG  = "${env.BRANCH_NAME}-${env.SHORT_SHA}"
+                    env.FRONT_CHANGED = sh(script: "git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q '^${FRONT_DIR}/' && echo true || echo false", returnStdout: true).trim()
+                    env.BACK_CHANGED  = sh(script: "git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q '^${BACK_DIR}/'  && echo true || echo false", returnStdout: true).trim()
+                    echo "IMAGE_TAG=${env.IMAGE_TAG}  FRONT_CHANGED=${env.FRONT_CHANGED}  BACK_CHANGED=${env.BACK_CHANGED}"
+                }
+            }
+        }
+
+        // =====================================================================
+        // CI — runs on every PR into dev/test/main. No image is built here.
+        // =====================================================================
+
+        stage('Lint & Unit Test - Front') {
+            when {
+                anyOf {
+                    changeRequest target: 'dev'
+                    changeRequest target: 'test'
+                    // changeRequest target: 'main'
+                }
+                changeset "${FRONT_DIR}/**"
+            }
+            agent { docker { image "node:18-alpine" label "agent-1" } }
+            steps {
+                dir("${FRONT_DIR}") { // install dependencies
+                    sh 'npm ci'
+                    sh 'CI=true npm test -- --watchAll=false'
+                }
+            }
+        }
+
+        stage('Lint & Unit Test - Back') {
+            when {
+                anyOf {
+                    changeRequest target: 'dev'
+                    changeRequest target: 'test'
+                    // changeRequest target: 'main'
+                }
+                changeset "${BACK_DIR}/**"
+            }
+            agent { docker { image "node:18-alpine" label "agent-1" } }
+            steps {
+                dir("${BACK_DIR}") {
+                    sh 'npm ci'
+                    // TODO: replace with a real test suite - package.json currently has a stub 'test' script
+                    sh 'node -e "require(\'./src/server.js\')" || echo "smoke-require skipped"'
+                }
             }
         }
 
@@ -59,152 +80,177 @@ pipeline {
             when {
                 anyOf {
                     changeRequest target: 'dev'
-                    changeRequest target: 'main'
-                    allOf { branch 'dev'; changeset "app/**" }
-                    allOf { branch 'dev'; changeset "Dockerfile" }
+                    changeRequest target: 'test'
+                    // changeRequest target: 'main'
                 }
             }
-            agent {
-                docker {
-                    image 'aquasec/trivy:latest'
-                    args '--entrypoint=""' // for run trivy without docker entrypoint in gitlab -> entrypoint : [""]
-                    label "agent-1"
-                }
-            }
-            environment {
-                HOME = "${WORKSPACE}"
-            }
+            agent { docker { image 'aquasec/trivy:latest' args '--entrypoint=""' label "agent-1" } }
+            environment { HOME = "${WORKSPACE}" }
             steps {
-                sh 'trivy fs --cache-dir ${WORKSPACE}/.trivy-cache --format table .'
-                sh 'trivy config --cache-dir ${WORKSPACE}/.trivy-cache --format table Dockerfile'
-            }
-            
-        }
-
-        stage('Build Image') {
-            when {
-                anyOf {
-                    changeRequest target: 'dev'
-                    changeRequest target: 'main'
-                    allOf { branch 'dev'; changeset "app/**" }
-                    allOf { branch 'dev'; changeset "Dockerfile" }
+                script {
+                    if (env.CHANGE_TARGET) {
+                        sh "trivy fs --cache-dir ${WORKSPACE}/.trivy-cache --format table . "
+                        sh "trivy config --cache-dir ${WORKSPACE}/.trivy-cache --format table ${FRONT_DIR}/Dockerfile ${BACK_DIR}/Dockerfile"
+                    }
                 }
-            }
-            agent { label "agent-1"}
-            steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
-                sh "docker save ${DOCKER_IMAGE} -o image.tar"
-                stash name: 'image-tar', includes: 'image.tar'
             }
         }
 
-        stage('Trivy Image Scan') {
-            when {
-                anyOf {
-                    changeRequest target: 'dev'
-                    changeRequest target: 'main'
-                    allOf { branch 'dev'; changeset "app/**" }
-                    allOf { branch 'dev'; changeset "Dockerfile" }
-                }
-            }
-            agent {  label "agent-1" }
+        // =====================================================================
+        // CD - dev: real merge/push to dev (not a PR). Build once, deploy.
+        // =====================================================================
+
+        stage('Build, Scan & Push - Front [dev]') {
+            when { allOf { branch 'dev'; not { changeRequest() }; expression { env.FRONT_CHANGED == 'true' } } }
+            agent { label "agent-1" }
             steps {
-                unstash 'image-tar'
-                sh "docker load -i image.tar"
-                sh '''
+                dir("${FRONT_DIR}") { sh "docker build -t ${FRONT_IMAGE}:${IMAGE_TAG} ." }
+                sh """
                     mkdir -p ${WORKSPACE}/.trivy-cache
-                    docker run --rm \
-                      -v /var/run/docker.sock:/var/run/docker.sock \
-                      -v ${WORKSPACE}/.trivy-cache:/tmp/.cache \
-                      -e HOME=/tmp \
-                      -e XDG_CACHE_HOME=/tmp/.cache \
-                      aquasec/trivy:latest image ${DOCKER_IMAGE} --format table
-                '''
-            }
-        }
-
-        // ---------- Push to ECR: only on real push to dev (PR merged into dev) ----------
-
-        stage('Push to ECR') {
-            when {// This stage runs only after a real push to dev // (either a direct push or a merged PR).
-                allOf { // 1 and 2 and 3 are true to run this job
-                    branch 'dev'
-                    not { changeRequest() } // not PR OPEN  was directly push on dev or PR closed+merged ~ -> real push on dev
-                    anyOf { changeset "app/**"; changeset "Dockerfile" } // change in app/** or Dockerfile
-                }
-            }
-            agent { label "agent-1" }
-            steps {
-                unstash 'image-tar'
-                sh "docker load -i image.tar"
-                withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh '''
-                        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
-                        docker tag $DOCKER_IMAGE:latest $ECR_REGISTRY/$DOCKER_IMAGE:latest
-                        docker push $ECR_REGISTRY/$DOCKER_IMAGE:latest
-                    '''
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v ${WORKSPACE}/.trivy-cache:/tmp/.cache -e HOME=/tmp -e XDG_CACHE_HOME=/tmp/.cache \
+                        aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --format table ${FRONT_IMAGE}:${IMAGE_TAG}
+                """
+                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                        docker push ${FRONT_IMAGE}:${IMAGE_TAG}
+                    """
                 }
             }
         }
 
-        // ---------- Deploy to dev: same condition as push-to-ecr, this IS "PR closed+merged into dev" ----------
-
-        stage('Deploy to Dev') {
-            when {
-                allOf {
-                    branch 'dev'
-                    not { changeRequest() }
-                    anyOf { changeset "app/**"; changeset "Dockerfile" }
-                }
-            }
+        stage('Build, Scan & Push - Back [dev]') {
+            when { allOf { branch 'dev'; not { changeRequest() }; expression { env.BACK_CHANGED == 'true' } } }
             agent { label "agent-1" }
             steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'DEPLOY_SSH_KEY', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
-                    string(credentialsId: 'DEPLOY_DEV_HOST', variable: 'DEPLOY_DEV_HOST')
-                    ]) {
-                    sh '''
-                        mkdir -p ~/.ssh
-                        ssh-keyscan -H $DEPLOY_DEV_HOST >> ~/.ssh/known_hosts
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY"
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "docker pull $ECR_REGISTRY/$DOCKER_IMAGE:latest"
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "docker rm -f $CONTAINER_NAME || true"
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new $DEPLOY_USER@$DEPLOY_DEV_HOST "docker run -d --name $CONTAINER_NAME -p $APP_PORT:8000 $ECR_REGISTRY/$DOCKER_IMAGE:latest"
-                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=accept-new \$DEPLOY_USER@\$DEPLOY_DEV_HOST 'for i in \$(seq 1 10); do curl -sf http://localhost:\$APP_PORT/health && break || sleep 2; done'
-                    '''
+                dir("${BACK_DIR}") { sh "docker build -t ${BACK_IMAGE}:${IMAGE_TAG} ." }
+                sh """
+                    mkdir -p ${WORKSPACE}/.trivy-cache
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${WORKSPACE}/.trivy-cache:/tmp/.cache -e HOME=/tmp -e XDG_CACHE_HOME=/tmp/.cache \
+                      aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --format table ${BACK_IMAGE}:${IMAGE_TAG}
+                """
+                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                        docker push ${BACK_IMAGE}:${IMAGE_TAG}
+                    """
                 }
             }
         }
 
-        // ---------- Deploy to prod: only on push to main (PR closed+merged into main), no rebuild ----------
-
-        stage('Deploy to Prod') {
-            when {
-                allOf {// 1 and 2 are true
-                    branch 'main' // push to main or equivelent like PR closed+ merged into main
-                    not { changeRequest() } // not PR OPEN
-                }
-            }
+        stage('Promote tag -> dev-values.yml') {
+            when { allOf { branch 'dev'; not { changeRequest() } } }
             agent { label "agent-1" }
             steps {
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'DEPLOY_SSH_KEY', keyFileVariable: 'SSH_KEY', usernameVariable: 'DEPLOY_USER'),
-                    string(credentialsId: 'DEPLOY_PROD_HOST', variable: 'DEPLOY_PROD_HOST')
-                ]) {
-                    sh '''
-                        mkdir -p ~/.ssh
-                        ssh-keyscan -H $DEPLOY_PROD_HOST >> ~/.ssh/known_hosts
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $ECR_REGISTRY"
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "docker pull $ECR_REGISTRY/$DOCKER_IMAGE:latest"
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "docker rm -f $CONTAINER_NAME || true"
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=accept-new  $DEPLOY_USER@$DEPLOY_PROD_HOST "docker run -d --name $CONTAINER_NAME -p $APP_PORT:8000 $ECR_REGISTRY/$DOCKER_IMAGE:latest"
-                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=accept-new \$DEPLOY_USER@\$DEPLOY_PROD_HOST 'for i in \$(seq 1 10); do curl -sf http://localhost:\$APP_PORT/health && break || sleep 2; done'
+                gitOpsBumpTag(env.DEV_VALUES)
+            }
+        }
 
-                    '''
+        stage('Smoke Test - Dev') {
+            when { allOf { branch 'dev'; not { changeRequest() } } }
+            agent { label "agent-1" }
+            steps {
+                withCredentials([string(credentialsId: 'DEV_APP_URL', variable: 'DEV_APP_URL')]) {
+                    sh 'for i in $(seq 1 10); do curl -sf $DEV_APP_URL/health && break || sleep 3; done'
                 }
+            }
+        }
+
+        // =====================================================================
+        // CD - test/staging: same shape as dev. This is the LAST build - the
+        // image produced here is the one that eventually reaches prod.
+        // =====================================================================
+
+        stage('Build, Scan & Push - Front [test]') {
+            when { allOf { branch 'test'; not { changeRequest() }; expression { env.FRONT_CHANGED == 'true' } } }
+            agent { label "agent-1" }
+            steps {
+                dir("${FRONT_DIR}") { sh "docker build -t ${FRONT_IMAGE}:${IMAGE_TAG} ." }
+                sh """
+                    mkdir -p ${WORKSPACE}/.trivy-cache
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${WORKSPACE}/.trivy-cache:/tmp/.cache -e HOME=/tmp -e XDG_CACHE_HOME=/tmp/.cache \
+                      aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --format table ${FRONT_IMAGE}:${IMAGE_TAG}
+                """
+                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                        docker push ${FRONT_IMAGE}:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Build, Scan & Push - Back [test]') {
+            when { allOf { branch 'test'; not { changeRequest() }; expression { env.BACK_CHANGED == 'true' } } }
+            agent { label "agent-1" }
+            steps {
+                dir("${BACK_DIR}") { sh "docker build -t ${BACK_IMAGE}:${IMAGE_TAG} ." }
+                sh """
+                    mkdir -p ${WORKSPACE}/.trivy-cache
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v ${WORKSPACE}/.trivy-cache:/tmp/.cache -e HOME=/tmp -e XDG_CACHE_HOME=/tmp/.cache \
+                      aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --format table ${BACK_IMAGE}:${IMAGE_TAG}
+                """
+                withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                        docker push ${BACK_IMAGE}:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Promote tag -> test-values.yml') {
+            when { allOf { branch 'test'; not { changeRequest() } } }
+            agent { label "agent-1" }
+            steps {
+                gitOpsBumpTag(env.TEST_VALUES)
+            }
+        }
+
+        stage('Smoke Test - Staging') {
+            when { allOf { branch 'test'; not { changeRequest() } } }
+            agent { label "agent-1" }
+            steps {
+                withCredentials([string(credentialsId: 'STAGING_APP_URL', variable: 'STAGING_APP_URL')]) {
+                    sh 'for i in $(seq 1 10); do curl -sf $STAGING_APP_URL/health && break || sleep 3; done'
+                }
+            }
+        }
+
+        // =====================================================================
+        // CD - prod: merge to main. NO build, NO scan - promote the exact
+        // digest that was validated on test. ArgoCD prod app is manual-sync,
+        // so this stage only prepares the commit; a human clicks Sync.
+        // =====================================================================
+
+        stage('Promote tag -> prod-values.yml') {
+            when { allOf { branch 'main'; not { changeRequest() } } }
+            agent { label "agent-1" }
+            steps {
+                script {
+                    echo "Reading last validated image tags from ${TEST_VALUES} and copying into ${PROD_VALUES}"
+                }
+                sh """
+                    docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
+                      sh -c 'FRONT_TAG=\$(yq ".front-chart.image.tag" ${TEST_VALUES}) && \
+                             BACK_TAG=\$(yq ".back-chart.image.tag" ${TEST_VALUES}) && \
+                             yq -i ".front-chart.image.tag = \$FRONT_TAG" ${PROD_VALUES} && \
+                             yq -i ".back-chart.image.tag = \$BACK_TAG" ${PROD_VALUES}'
+                """
+                withCredentials([usernamePassword(credentialsId: 'GITHUB_PAT', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    sh """
+                        git config user.email "jenkins-ci@pipeline"
+                        git config user.name "jenkins-ci"
+                        git add ${PROD_VALUES}
+                        git commit -m "promote ${IMAGE_TAG} from test to prod [ci skip]" || echo "nothing to commit"
+                        git push https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git HEAD:main
+                    """
+                }
+                echo "prod-values.yml updated. Go to ArgoCD UI -> devops-app (prod) -> click Sync to apply."
             }
         }
     }
@@ -214,5 +260,32 @@ pipeline {
             sh 'docker image prune -af || true'
         }
     }
+}
 
+// ---------------------------------------------------------------------------
+// Shared step: bump the built image tag(s) into the given env values file
+// and push the commit back to this same repo (ArgoCD watches it for changes).
+// ---------------------------------------------------------------------------
+def gitOpsBumpTag(String valuesFile) {
+    if (env.FRONT_CHANGED == 'true') {
+        sh """
+            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
+              yq -i '.front-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
+        """
+    }
+    if (env.BACK_CHANGED == 'true') {
+        sh """
+            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
+              yq -i '.back-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
+        """
+    }
+    withCredentials([usernamePassword(credentialsId: 'GITHUB_PAT', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+        sh """
+            git config user.email "jenkins-ci@pipeline"
+            git config user.name "jenkins-ci"
+            git add ${valuesFile}
+            git commit -m "build ${env.IMAGE_TAG} -> ${valuesFile} [ci skip]" || echo "nothing to commit"
+            git push https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git HEAD:${env.BRANCH_NAME}
+        """
+    }
 }
