@@ -26,7 +26,7 @@ export default function Navbar() {
           <div className="dh-logo-icon">
             <i className="fa-solid fa-paper-plane"></i>
           </div>
-          <span className="dh-text">DeployHub</span>
+          <span className="dh-text">DeployHub v 1.000</span>
         </NavLink>
 
         <button
