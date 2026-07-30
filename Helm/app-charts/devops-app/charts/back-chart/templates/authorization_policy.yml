@@ -10,8 +10,10 @@ spec:
         matchLabels:
             app.kubernetes.io/name:  back-chart 
     action: ALLOW 
-    rules:
-        - from:
-            - source:
-                principals:
-                - cluster.local/ns/devops-app/sa/devops-app-release-front-chart 
+    # rules:
+    #     - from:
+    #         - source:
+    #             principals:
+    #             - cluster.local/ns/devops-app/sa/devops-app-release-front-chart 
+    rules: 
+        - {}
