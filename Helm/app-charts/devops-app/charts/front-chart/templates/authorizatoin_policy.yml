@@ -17,5 +17,6 @@ spec:
 
 # allow with no rules -> block all traffic to front 
   action: ALLOW
-  rules: {}
+  rules: 
+  - {}
 
