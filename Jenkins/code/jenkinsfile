@@ -110,14 +110,13 @@ pipeline {
                     changeRequest target: 'test'
                 }
             }
-            agent { 
-                docker { 
-                    image 'aquasec/trivy:latest' 
-                    args '--entrypoint=""' 
+            agent {
+                docker {
+                    image 'aquasec/trivy:latest'
+                    args '--entrypoint=""'
                     label "agent-1"
-                    } 
                 }
-
+            }
             environment { HOME = "${WORKSPACE}" }
 
 
@@ -130,8 +129,6 @@ pipeline {
                     }
                 }
             }
-
-            
         }
 
         // =====================================================================
