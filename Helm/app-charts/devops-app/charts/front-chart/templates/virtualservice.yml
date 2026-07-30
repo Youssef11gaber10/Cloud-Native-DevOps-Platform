@@ -25,23 +25,23 @@ spec:
 
 
       route:
-      
+
       {{- if .Values.global.back_canary_enabled }}
         - destination:
             host: {{ .Values.global.backend_host }}
             subset: stable
             port:
               number: 5000
-          weight: {{ (index .Values "back-chart" "canary" "weight" "stable") | default 100 }}
+          weight: {{ .Values.global.back_canary_weight.stable | default 100 }}
 
         - destination:
             host: {{ .Values.global.backend_host }}
             subset: canary
             port:
               number: 5000
-          weight: {{ (index .Values "back-chart" "canary" "weight" "canary") | default 0 }}
+          weight: {{ .Values.global.back_canary_weight.canary | default 0 }}
 
-        {{- else -}}
+        {{- else }}
         - destination:
             host: {{ .Values.global.backend_host }}
             port:
@@ -64,16 +64,16 @@ spec:
             subset: stable
             port:
               number: 8080
-          weight: {{ .Values.canary.weight | default 100 }}
+          weight: {{ .Values.front_canary_weight.stable | default 100 }}
 
         - destination:
             host: {{ .Values.global.frontend_host }}
             subset: canary
             port:
               number: 8080
-          weight: {{ .Values.stable.weight | default 0 }}
+          weight: {{ .Values.front_canary_weight.canary | default 0 }}
 
-        {{- else -}}
+        {{- else }}
         - destination:
               host: {{ .Values.global.frontend_host }}
               port:
