@@ -27,13 +27,11 @@ mysql:
 back-chart:
   image:
     repository: "youssef11gaber10/gp-back"
-    tag: "test-f2ff458e"
+    tag: "test-1b522481"
 front-chart:
   image:
     repository: "youssef11gaber10/gp-front"
-    tag: "test-c8b1f417"
-
-    
+    tag: "test-1b522481"
 global:
   db_host: "terraform-2026073004331701100000000a.c52e88koezpq.eu-north-1.rds.amazonaws.com"
   backend_host: "back-svc"
