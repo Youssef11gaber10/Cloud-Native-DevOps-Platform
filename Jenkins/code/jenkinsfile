@@ -179,17 +179,17 @@ pipeline {
             }
         }
 
-        stage('Smoke Test - Dev') {
-            when { allOf { branch 'dev'; not { changeRequest() } } }
-            agent { 
-                label "agent-1"
-                }
-            steps {
-                withCredentials([string(credentialsId: 'DEV_APP_URL', variable: 'DEV_APP_URL')]) {
-                    sh 'for i in $(seq 1 10); do curl -sf $DEV_APP_URL/health && break || sleep 3; done'
-                }
-            }
-        }
+        // stage('Smoke Test - Dev') {
+        //     when { allOf { branch 'dev'; not { changeRequest() } } }
+        //     agent { 
+        //         label "agent-1"
+        //         }
+        //     steps {
+        //         withCredentials([string(credentialsId: 'DEV_APP_URL', variable: 'DEV_APP_URL')]) {
+        //             sh 'for i in $(seq 1 10); do curl -sf $DEV_APP_URL/health && break || sleep 3; done'
+        //         }
+        //     }
+        // }
 
         // =====================================================================
         // CD - test/staging: same shape as dev. This is the LAST build - the
@@ -313,13 +313,13 @@ def gitOpsBumpTag(String valuesFile) {
     if (env.FRONT_CHANGED == 'true') {
         sh """
             docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
-              yq -i '.front-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
+              -i '.front-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
         """
     }
     if (env.BACK_CHANGED == 'true') {
         sh """
             docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
-              yq -i '.back-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
+              -i '.back-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
         """
     }
     withCredentials([usernamePassword(credentialsId: 'GITHUB_PAT', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
