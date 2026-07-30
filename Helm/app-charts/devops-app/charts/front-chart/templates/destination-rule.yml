@@ -1,0 +1,18 @@
+{{- if .Values.canary.enabled -}}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+    name: devops-app-front-dr
+    namespace: devops-app
+spec:
+    host: {{ .Values.global.frontend_host }}  # service name that selector both canary , stable pod of front 
+    subsets:
+    - name: stable
+      labels:
+        version: stable
+
+    - name: canary
+      labels:
+        version: canary
+
+{{- end }}

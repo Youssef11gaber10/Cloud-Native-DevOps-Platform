@@ -1,7 +1,8 @@
+{{- if .Values.canary.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "front-chart.fullname" . }}
+  name: {{ include "front-chart.fullname" . }}-canary
   labels:
     {{- include "front-chart.labels" . | nindent 4 }}
 spec:
@@ -11,7 +12,7 @@ spec:
   selector:
     matchLabels:
       {{- include "front-chart.selectorLabels" . | nindent 6 }}
-      version: stable
+      version: canary
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -23,7 +24,7 @@ spec:
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        version: stable
+        version: canary
 
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -41,7 +42,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.canary.image.repository }}:{{ .Values.canary.image.tag | default "latest" }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -85,3 +86,5 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
+{{- end }}

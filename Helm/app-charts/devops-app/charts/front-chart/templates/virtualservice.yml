@@ -12,6 +12,8 @@ spec:
     - {{ .Values.global.hostname }}
 
   http:
+
+
     - match:
         - uri:
             prefix: /api
@@ -19,17 +21,60 @@ spec:
         uriRegexRewrite:
           match: '^/api(/.*)?$'
           rewrite: '\1'
+
+
+
       route:
+      {{- if index .Values "back-chart" "canary" "enabled" }}
+        - destination:
+            host: {{ .Values.global.backend_host }}
+            subset: stable
+            port:
+              number: 5000
+          weight: {{ (index .Values "back-chart" "canary" "weight" "stable") | default 100 }}
+
+        - destination:
+            host: {{ .Values.global.backend_host }}
+            subset: canary
+            port:
+              number: 5000
+          weight: {{ (index .Values "back-chart" "canary" "weight" "canary") | default 0 }}
+
+        {{- else -}}
         - destination:
             host: {{ .Values.global.backend_host }}
             port:
               number: 5000
+        {{- end }}
+
+
+
+
   
     - match:
         - uri:
             prefix: /
+
+
       route:
+      {{- if .Values.canary.enabled }}
         - destination:
+            host: {{ .Values.global.frontend_host }} # svc of both front end 
+            subset: stable
+            port:
+              number: 8080
+          weight: {{ .Values.canary.weight | default 100 }}
+
+        - destination:
+            host: {{ .Values.global.frontend_host }}
+            subset: canary
+            port:
+              number: 8080
+          weight: {{ .Values.stable.weight | default 0 }}
+
+      {{- else -}}
+      - destination:
             host: {{ .Values.global.frontend_host }}
             port:
               number: 8080
+      {{- end }}

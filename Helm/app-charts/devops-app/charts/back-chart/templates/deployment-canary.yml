@@ -1,17 +1,18 @@
+{{- if .Values.canary.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "front-chart.fullname" . }}
+  name: {{ include "back-chart.fullname" . }}-canary
   labels:
-    {{- include "front-chart.labels" . | nindent 4 }}
+    {{- include "back-chart.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "front-chart.selectorLabels" . | nindent 6 }}
-      version: stable
+      {{- include "back-chart.selectorLabels" . | nindent 6 }}
+      version: canary
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,18 +20,17 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "front-chart.labels" . | nindent 8 }}
+        {{- include "back-chart.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        version: stable
-
+        version: canary
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "front-chart.serviceAccountName" . }}
+      serviceAccountName: {{ include "back-chart.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -41,7 +41,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.canary.image.repository }}:{{ .Values.canary.image.tag | default "latest" }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
@@ -57,11 +57,12 @@ spec:
           {{- end }}
 
           envFrom:
+            - secretRef:
+                name: {{ .Values.envFrom.secret }}
             - configMapRef:
-                name: front-cm
+                name: back-cm 
 
           {{- with .Values.resources }}
-
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -85,3 +86,5 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
+{{- end }}
