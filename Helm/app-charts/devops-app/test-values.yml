@@ -22,7 +22,7 @@ back-chart:
 front-chart:
   image:
     repository: "youssef11gaber10/gp-front"
-    tag: "test-1b522481"
+    tag: "test-eb8b76ec"
 global:
   db_host: "mysql-svc" # here i set this in mysql chart and also read in backend 
   # db_port: "3306" # not changed so no need to override here 
