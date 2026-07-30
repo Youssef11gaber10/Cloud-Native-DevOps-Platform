@@ -38,6 +38,6 @@ front-chart:
     tag: "latest"
 
 global:
-  db_host: "terraform-20260729043518941300000004.c52e88koezpq.eu-north-1.rds.amazonaws.com"
+  db_host: "terraform-2026073004331701100000000a.c52e88koezpq.eu-north-1.rds.amazonaws.com"
   backend_host: "back-svc"
   frontend_host: "front-svc"
