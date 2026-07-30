@@ -267,19 +267,17 @@ pipeline {
 
         stage('Promote tag -> prod-values.yml') {
             when { allOf { branch 'main'; not { changeRequest() } } }
-            agent { 
-                label "agent-1"
-                }
+            agent { label "agent-1" }
             steps {
                 script {
                     echo "Reading last validated image tags from ${TEST_VALUES} and copying into ${PROD_VALUES}"
                 }
                 sh """
-                    docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
-                      sh -c 'FRONT_TAG=\$(yq ".front-chart.image.tag" ${TEST_VALUES}) && \
-                             BACK_TAG=\$(yq ".back-chart.image.tag" ${TEST_VALUES}) && \
-                             yq -i ".front-chart.image.tag = \$FRONT_TAG" ${PROD_VALUES} && \
-                             yq -i ".back-chart.image.tag = \$BACK_TAG" ${PROD_VALUES}'
+                    docker run --rm -v \${WORKSPACE}:/w -w /w --entrypoint sh mikefarah/yq:latest \
+                      -c 'FRONT_TAG=\$(yq ".front-chart.image.tag" ${TEST_VALUES}) && \
+                          BACK_TAG=\$(yq ".back-chart.image.tag" ${TEST_VALUES}) && \
+                          yq -i ".front-chart.image.tag = \$FRONT_TAG" ${PROD_VALUES} && \
+                          yq -i ".back-chart.image.tag = \$BACK_TAG" ${PROD_VALUES}'
                 """
                 withCredentials([usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                     sh """
@@ -287,12 +285,16 @@ pipeline {
                         git config user.name "jenkins-ci"
                         git add ${PROD_VALUES}
                         git commit -m "promote ${IMAGE_TAG} from test to prod [ci skip]" || echo "nothing to commit"
+                        git pull --rebase https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git main
                         git push https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git HEAD:main
                     """
                 }
                 echo "prod-values.yml updated. Go to ArgoCD UI -> devops-app (prod) -> click Sync to apply."
             }
         }
+
+
+
     }
 
     post {
