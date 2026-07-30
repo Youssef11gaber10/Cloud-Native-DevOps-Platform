@@ -115,8 +115,11 @@ pipeline {
                               --name="${KOPS_CLUSTER_NAME}" \
                               --node-count=3 \
                               --node-size=t3.small \
+                              --node-volume-size=30 \
+
                               --zones=${AWS_REGION_KOPS}a,${AWS_REGION_KOPS}b,${AWS_REGION_KOPS}c \
                               --master-size=t3.small \
+                              --master-volume-size=30 \
                               --master-zones=${AWS_REGION_KOPS}a \
                               --ssh-public-key=${KOPS_PUB_KEY} \
                               --yes
