@@ -41,7 +41,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.canary.image.repository }}:{{ .Values.canary.image.tag | default "latest" }}"
+          image: "{{ .Values.global.back_canary_image.repository }}:{{ .Values.global.back_canary_image.tag | default "latest" }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
