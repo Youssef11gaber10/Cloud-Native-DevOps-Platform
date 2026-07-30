@@ -1,4 +1,4 @@
-{{- if .Values.canary.enabled -}}
+{{- if .Values.global.front_canary_enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
