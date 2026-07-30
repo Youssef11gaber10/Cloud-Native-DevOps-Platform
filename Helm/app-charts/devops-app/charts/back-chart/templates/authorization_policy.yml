@@ -12,7 +12,7 @@ spec:
     action: ALLOW 
     rules:
         - from:
-            source:
+            - source:
                 principals:
                 - cluster.local/ns/devops-app/sa/devops-app-release-front-chart                                                                                                                  │
 
