@@ -35,9 +35,9 @@ spec:
 
   template:
     metadata:
-      name: '{{name}}'
+      name: '{{.name}}'
       annotations:
-        argocd.argoproj.io/sync-wave: "{{order}}"
+        argocd.argoproj.io/sync-wave: "{{.order}}"
     spec:
       project: default
       source:
@@ -47,18 +47,18 @@ spec:
         helm:
           releaseName: devops-app-release
           valueFiles:
-            - '{{values_file}}'
+            - '{{.values_file}}'
       destination:
-        name: '{{cluster_name}}'
+        name: '{{.cluster_name}}'
         # namespace: 'devops-app'
-        namespace: '{{namespace}}'
+        namespace: '{{.namespace}}'
 
-      {{ if .autosync }}
+      {{- if .autosync }}
       syncPolicy:
         automated: 
           selfHeal: true
           prune: true
         syncOptions:
           - CreateNamespace=false
-      {{ end }}
+      {{- end }}
           
