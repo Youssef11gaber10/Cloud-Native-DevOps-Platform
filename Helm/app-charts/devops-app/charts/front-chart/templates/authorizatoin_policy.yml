@@ -1,0 +1,20 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: frontend-policy # policy on front end controls who can enter to front end
+  namespace: devops-app
+spec:
+  selector:
+    matchLabels:
+        app.kubernetes.io/name:  front-chart # deny front end pods any one can talk to it 
+  action: ALLOW
+  rules:
+    - from:
+    - source:
+        principals:
+        - cluster.local/ns/istio-system/sa/gateway # allow only traffic from gateway to front end
+
+
+        # allow with no rules -> block all traffic to front 
+#   action: ALLOW
+#   rules: []

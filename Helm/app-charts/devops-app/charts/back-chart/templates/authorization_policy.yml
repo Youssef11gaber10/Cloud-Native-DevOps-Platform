@@ -1,0 +1,24 @@
+# authorization policy define which ns can talk to each other and which pods can talk to each other inside same ns 
+# i will make front end can talk to back end and not the opposite
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+    name: backend-policy # policy on bachend pods define who can enter to them (communicate with them)
+    namespace: devops-app
+spec:
+    selector:
+        matchLabels:
+            app.kubernetes.io/name:  back-chart 
+    action: ALLOW 
+    rules:
+        - from:
+            source:
+                principals:
+                - cluster.local/ns/devops-app/sa/devops-app-release-front-chart                                                                                                                  │
+
+
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/devops-app/sa/frontend-sa
