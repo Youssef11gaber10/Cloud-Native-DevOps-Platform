@@ -64,14 +64,14 @@ spec:
             subset: stable
             port:
               number: 8080
-          weight: {{ .Values.front_canary_weight.stable | default 100 }}
+          weight: {{ .Values.global.front_canary_weight.stable | default 100 }}
 
         - destination:
             host: {{ .Values.global.frontend_host }}
             subset: canary
             port:
               number: 8080
-          weight: {{ .Values.front_canary_weight.canary | default 0 }}
+          weight: {{ .Values.global.front_canary_weight.canary | default 0 }}
 
         {{- else }}
         - destination:
