@@ -31,7 +31,7 @@ COPY . .
 
 # node:alpine already ships a non-root "node" user, same idea as nginx's
 # built-in "nginx" user - no need to create one ourselves
-USER node
+# USER node
 
 EXPOSE 5000
 
