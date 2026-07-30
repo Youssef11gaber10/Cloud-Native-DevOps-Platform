@@ -14,5 +14,5 @@ spec:
         - from:
             - source:
                 principals:
-                - cluster.local/ns/devops-app/sa/devops-app-release-front-chart                                                                                                                  │
+                - cluster.local/ns/devops-app/sa/devops-app-release-front-chart                                                                                                                 │
 
