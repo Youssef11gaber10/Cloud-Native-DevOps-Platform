@@ -6,12 +6,12 @@ metadata:
 spec:
   hard:
     # CPU
-    requests.cpu: "2"        # 2000m total requests across all pods
-    limits.cpu: "4"          # 4000m total limits across all pods
+    requests.cpu: "3"        # 2000m total requests across all pods
+    limits.cpu: "5"          # 4000m total limits across all pods
 
     # Memory
-    requests.memory: 2Gi
-    limits.memory: 4Gi
+    requests.memory: 3Gi
+    limits.memory: 5Gi
 
     # Storage
     requests.storage: 30Gi
