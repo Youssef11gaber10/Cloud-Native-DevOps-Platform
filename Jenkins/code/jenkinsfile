@@ -48,7 +48,14 @@ pipeline {
                 }
                 changeset "${FRONT_DIR}/**"
             }
-            agent { docker { image "node:18-alpine" label "agent-1" } }
+            agent { 
+
+                docker { 
+                    image "node:18-alpine" 
+                    label "agent-1" 
+                    } 
+                }
+
             steps {
                 dir("${FRONT_DIR}") { // install dependencies
                     sh 'npm ci'
@@ -66,8 +73,16 @@ pipeline {
                 }
                 changeset "${BACK_DIR}/**"
             }
-            agent { docker { image "node:18-alpine" label "agent-1" } }
-            steps {
+            agent { 
+                
+                docker { 
+                    image "node:18-alpine" 
+                    label "agent-1" 
+                    } 
+                }
+
+
+                steps {
                 dir("${BACK_DIR}") {
                     sh 'npm ci'
                     // TODO: replace with a real test suite - package.json currently has a stub 'test' script
@@ -84,8 +99,16 @@ pipeline {
                     // changeRequest target: 'main'
                 }
             }
-            agent { docker { image 'aquasec/trivy:latest' args '--entrypoint=""' label "agent-1" } }
+            agent { 
+                docker { 
+                    image 'aquasec/trivy:latest' 
+                    args '--entrypoint=""' 
+                    label "agent-1"
+                    } 
+                }
+
             environment { HOME = "${WORKSPACE}" }
+
             steps {
                 script {
                     if (env.CHANGE_TARGET) {
@@ -94,6 +117,8 @@ pipeline {
                     }
                 }
             }
+
+            
         }
 
         // =====================================================================
