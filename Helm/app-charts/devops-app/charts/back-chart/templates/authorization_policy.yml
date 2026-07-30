@@ -16,9 +16,3 @@ spec:
                 principals:
                 - cluster.local/ns/devops-app/sa/devops-app-release-front-chart                                                                                                                  │
 
-
-  rules:
-  - from:
-    - source:
-        principals:
-        - cluster.local/ns/devops-app/sa/frontend-sa
