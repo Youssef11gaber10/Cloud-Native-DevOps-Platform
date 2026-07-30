@@ -5,6 +5,6 @@ metadata:
   namespace: devops-app
 spec:
   mtls:
-    mode: PERMISSIVE # accepts both mtls and plain text, all pods inside ns will communicate with mtls or plain text
+    # mode: PERMISSIVE # accepts both mtls and plain text, all pods inside ns will communicate with mtls or plain text
     # if he premissive mode he will allow make pod with no envoy side car can reach the pod have envoy side car cause its  premissive
-    # mode: STRICT # accepts only mutual TLS, all pods inside ns will communicate with mtls
+    mode: STRICT # accepts only mutual TLS, so should all pods have sidecar so this side car do the mtls so can't have pod in normal ns can talk to pod have istio
