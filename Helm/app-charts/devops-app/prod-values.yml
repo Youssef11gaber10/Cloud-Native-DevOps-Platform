@@ -32,6 +32,7 @@ front-chart:
   image:
     repository: "youssef11gaber10/gp-front"
     tag: "test-1b522481"
+
 global:
   db_host: "terraform-2026073004331701100000000a.c52e88koezpq.eu-north-1.rds.amazonaws.com"
   backend_host: "back-svc"
@@ -44,7 +45,7 @@ global:
   back_canary_image:
     repository: "youssef11gaber10/gp-back"
     tag: "test-f2ff458e"
-  front_canary_enabled: true
+  front_canary_enabled: false
   front_canary_weight:
     stable: 10
     canary: 90
