@@ -322,7 +322,7 @@ def gitOpsBumpTag(String valuesFile) {
               -i '.back-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
         """
     }
-    withCredentials([usernamePassword(credentialsId: 'GITHUB_PAT', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+    withCredentials([usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
         sh """
             git config user.email "jenkins-ci@pipeline"
             git config user.name "jenkins-ci"
