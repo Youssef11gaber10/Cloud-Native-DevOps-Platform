@@ -267,9 +267,7 @@ pipeline {
 
         stage('Promote tag -> prod-values.yml') {
             when { allOf { branch 'main'; not { changeRequest() } } }
-            agent { 
-                label "agent-1" 
-            }
+            agent { label "agent-1" }
             steps {
                 script {
                     echo "Reading last validated image tags from ${TEST_VALUES} and copying into ${PROD_VALUES}"
@@ -294,6 +292,10 @@ pipeline {
                 echo "prod-values.yml updated. Go to ArgoCD UI -> devops-app (prod) -> click Sync to apply."
             }
         }
+
+
+
+    }
 
     post {
         always {
