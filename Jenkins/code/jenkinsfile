@@ -270,14 +270,22 @@ pipeline {
             agent { label "agent-1" }
             steps {
                 script {
-                    echo "Reading last validated image tags from ${TEST_VALUES} and copying into ${PROD_VALUES}"
+                    echo "Reading last validated image tags from ${TEST_VALUES} and enabling canary in ${PROD_VALUES}"
                 }
                 sh """
                     docker run --rm -v \${WORKSPACE}:/w -w /w --entrypoint sh mikefarah/yq:latest -c '
                         FRONT_TAG=\$(yq ".front-chart.image.tag" ${TEST_VALUES})
                         BACK_TAG=\$(yq ".back-chart.image.tag" ${TEST_VALUES})
-                        yq -i ".front-chart.image.tag = \\"\$FRONT_TAG\\"" ${PROD_VALUES}
-                        yq -i ".back-chart.image.tag = \\"\$BACK_TAG\\"" ${PROD_VALUES}
+                        yq -i "
+                            .global.front_canary_enabled = true |
+                            .global.front_canary_image.tag = \\"\$FRONT_TAG\\" |
+                            .global.front_canary_weight.stable = 90 |
+                            .global.front_canary_weight.canary = 10 |
+                            .global.back_canary_enabled = true |
+                            .global.back_canary_image.tag = \\"\$BACK_TAG\\" |
+                            .global.back_canary_weight.stable = 90 |
+                            .global.back_canary_weight.canary = 10
+                        " ${PROD_VALUES}
                     '
                 """
                 withCredentials([usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
@@ -285,12 +293,12 @@ pipeline {
                         git config user.email "jenkins-ci@pipeline"
                         git config user.name "jenkins-ci"
                         git add ${PROD_VALUES}
-                        git commit -m "promote ${IMAGE_TAG} from test to prod [ci skip]" || echo "nothing to commit"
+                        git commit -m "promote ${IMAGE_TAG} from test to prod canary [ci skip]" || echo "nothing to commit"
                         git pull --rebase https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git main
                         git push https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git HEAD:main
                     """
                 }
-                echo "prod-values.yml updated. Go to ArgoCD UI -> devops-app (prod) -> click Sync to apply."
+                echo "prod-values.yml updated with new canary tag/weights. Go to ArgoCD UI -> devops-app (prod) -> click Sync to apply."
             }
         }
 
@@ -312,22 +320,14 @@ pipeline {
 def gitOpsBumpTag(String valuesFile) {
     if (env.FRONT_CHANGED == 'true') {
         sh """
-            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest -i '
-                .global.front_canary_enabled = true |
-                .global.front_canary_image.tag = "${env.IMAGE_TAG}" |
-                .global.front_canary_weight.stable = 90 |
-                .global.front_canary_weight.canary = 10
-            ' ${valuesFile}
+            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
+              -i '.front-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
         """
     }
     if (env.BACK_CHANGED == 'true') {
         sh """
-            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest -i '
-                .global.back_canary_enabled = true |
-                .global.back_canary_image.tag = "${env.IMAGE_TAG}" |
-                .global.back_canary_weight.stable = 90 |
-                .global.back_canary_weight.canary = 10
-            ' ${valuesFile}
+            docker run --rm -v \${WORKSPACE}:/w -w /w mikefarah/yq:latest \
+              -i '.back-chart.image.tag = "${env.IMAGE_TAG}"' ${valuesFile}
         """
     }
     withCredentials([usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
@@ -335,8 +335,7 @@ def gitOpsBumpTag(String valuesFile) {
             git config user.email "jenkins-ci@pipeline"
             git config user.name "jenkins-ci"
             git add ${valuesFile}
-            git commit -m "canary: bump ${env.IMAGE_TAG} -> ${valuesFile}, reset split to 90/10" || echo "nothing to commit"
-            git pull --rebase https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git ${env.BRANCH_NAME}
+            git commit -m "build ${env.IMAGE_TAG} -> ${valuesFile} [ci skip]" || echo "nothing to commit"
             git push https://\$GIT_USER:\$GIT_TOKEN@github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git HEAD:${env.BRANCH_NAME}
         """
     }
