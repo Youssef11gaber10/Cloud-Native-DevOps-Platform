@@ -14,12 +14,14 @@ spec:
             values_file: prod-values.yml
             cluster_name: eks-prod
             namespace: 'devops-app'
+            branch: main
             autosync: false
 
           - name: staging-devops-app
             values_file: test-values.yml
             cluster_name: eks-prod
             namespace: 'staging-devops-app'
+            branch: test
             autosync: true
 
           # - name: dev-devops-app
@@ -36,7 +38,7 @@ spec:
       source:
         repoURL: https://github.com/Youssef11gaber10/Cloud-Native-DevOps-Platform.git
         path: 'Helm/app-charts/devops-app'
-        targetRevision: main
+        targetRevision: {{.branch}}
         helm:
           releaseName: devops-app-release
           valueFiles:
