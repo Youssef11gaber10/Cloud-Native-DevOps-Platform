@@ -10,11 +10,12 @@ spec:
   action: ALLOW
   rules:
     - from:
-    - source:
-        principals:
-        - cluster.local/ns/istio-system/sa/gateway # allow only traffic from gateway to front end
+        - source:
+            principals:
+                - cluster.local/ns/istio-system/sa/gateway # allow only traffic from gateway to front end
 
 
         # allow with no rules -> block all traffic to front 
 #   action: ALLOW
 #   rules: []
+
