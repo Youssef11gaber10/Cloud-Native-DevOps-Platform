@@ -273,11 +273,12 @@ pipeline {
                     echo "Reading last validated image tags from ${TEST_VALUES} and copying into ${PROD_VALUES}"
                 }
                 sh """
-                    docker run --rm -v \${WORKSPACE}:/w -w /w --entrypoint sh mikefarah/yq:latest \
-                      -c 'FRONT_TAG=\$(yq ".front-chart.image.tag" ${TEST_VALUES}) && \
-                          BACK_TAG=\$(yq ".back-chart.image.tag" ${TEST_VALUES}) && \
-                          yq -i ".front-chart.image.tag = \$FRONT_TAG" ${PROD_VALUES} && \
-                          yq -i ".back-chart.image.tag = \$BACK_TAG" ${PROD_VALUES}'
+                    docker run --rm -v \${WORKSPACE}:/w -w /w --entrypoint sh mikefarah/yq:latest -c '
+                        FRONT_TAG=\$(yq ".front-chart.image.tag" ${TEST_VALUES})
+                        BACK_TAG=\$(yq ".back-chart.image.tag" ${TEST_VALUES})
+                        yq -i ".front-chart.image.tag = \\"\$FRONT_TAG\\"" ${PROD_VALUES}
+                        yq -i ".back-chart.image.tag = \\"\$BACK_TAG\\"" ${PROD_VALUES}
+                    '
                 """
                 withCredentials([usernamePassword(credentialsId: 'GIT_REPO_CREDENTIALS', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
                     sh """
