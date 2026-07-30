@@ -31,3 +31,9 @@ global:
   ################### end of backend ################
   frontend_host: "front-svc"
   hostname: "test-devops-app.mycloudlab.website"
+  front_canary_enabled: true
+  front_canary_image:
+    tag: test-49a98a0a
+  front_canary_weight:
+    stable: 90
+    canary: 10
