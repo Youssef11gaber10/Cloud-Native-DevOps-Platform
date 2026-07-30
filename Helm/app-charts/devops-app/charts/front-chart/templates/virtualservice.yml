@@ -25,7 +25,7 @@ spec:
 
 
       route:
-      {{- if index .Values "back-chart" "canary" "enabled" }}
+      {{- if .Values.global.back_canary_enabled }}
         - destination:
             host: {{ .Values.global.backend_host }}
             subset: stable
@@ -57,7 +57,7 @@ spec:
 
 
       route:
-      {{- if .Values.canary.enabled }}
+      {{- if .Values.global.front_canary_enabled }}
         - destination:
             host: {{ .Values.global.frontend_host }} # svc of both front end 
             subset: stable

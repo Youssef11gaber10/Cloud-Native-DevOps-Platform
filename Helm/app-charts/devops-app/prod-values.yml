@@ -29,7 +29,6 @@ back-chart:
     repository: "youssef11gaber10/gp-back"
     tag: "test-f2ff458e"
   canary:
-    enabled: false
     image:
       repository: "youssef11gaber10/gp-back"
       tag: "test-f2ff458e"
@@ -41,7 +40,6 @@ front-chart:
     repository: "youssef11gaber10/gp-front"
     tag: "test-c8b1f417"
   canary:
-    enabled: false
     image:
       repository: "youssef11gaber10/gp-front"
       tag: "test-c8b1f417"
@@ -53,3 +51,5 @@ global:
   backend_host: "back-svc"
   frontend_host: "front-svc"
   hostname: "devops-app.mycloudlab.website"
+  back_canary_enabled: false
+  front_canary_enabled: false
