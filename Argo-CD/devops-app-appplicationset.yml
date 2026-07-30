@@ -14,7 +14,7 @@ spec:
             values_file: prod-values.yml
             cluster_name: eks-prod
             namespace: 'devops-app'
-            autosync: true
+            autosync: false
 
           - name: staging-devops-app
             values_file: test-values.yml
