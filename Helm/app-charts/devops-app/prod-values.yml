@@ -37,14 +37,14 @@ global:
   backend_host: "back-svc"
   frontend_host: "front-svc"
   hostname: "devops-app.mycloudlab.website"
-  back_canary_enabled: false
+  back_canary_enabled: true
   back_canary_weight:
     stable: 90
     canary: 10
   back_canary_image:
     repository: "youssef11gaber10/gp-back"
     tag: "test-1b522481"
-  front_canary_enabled: false
+  front_canary_enabled: true
   front_canary_weight:
     stable: 90
     canary: 10
