@@ -32,6 +32,8 @@ front-chart:
   image:
     repository: "youssef11gaber10/gp-front"
     tag: "test-c8b1f417"
+
+    
 global:
   db_host: "terraform-2026073004331701100000000a.c52e88koezpq.eu-north-1.rds.amazonaws.com"
   backend_host: "back-svc"
