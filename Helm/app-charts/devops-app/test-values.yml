@@ -22,7 +22,7 @@ back-chart:
 front-chart:
   image:
     repository: "youssef11gaber10/gp-front"
-    tag: "test-eb8b76ec"
+    tag: "test-e3d55b4d"
 global:
   db_host: "mysql-svc" # here i set this in mysql chart and also read in backend 
   # db_port: "3306" # not changed so no need to override here 
@@ -31,4 +31,3 @@ global:
   ################### end of backend ################
   frontend_host: "front-svc"
   hostname: "test-devops-app.mycloudlab.website"
-

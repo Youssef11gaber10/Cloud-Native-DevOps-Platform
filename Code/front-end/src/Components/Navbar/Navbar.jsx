@@ -45,7 +45,7 @@ export default function Navbar() {
         <nav className="dh-links">
           <NavLink to="/home" className="dh-link">
             <i className="fa-solid fa-gauge dh-link-icon"></i>
-            <span>Home canary 222</span>
+            <span>Home canary vv2</span>
           </NavLink>
 
           <NavLink to="/projects" className="dh-link">
