@@ -41,3 +41,4 @@ global:
   db_host: "terraform-2026073004331701100000000a.c52e88koezpq.eu-north-1.rds.amazonaws.com"
   backend_host: "back-svc"
   frontend_host: "front-svc"
+  hostname: "devops-app.mycloudlab.website"

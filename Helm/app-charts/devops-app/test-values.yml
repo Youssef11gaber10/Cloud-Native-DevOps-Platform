@@ -40,3 +40,4 @@ global:
   ################### end of backend ################
 
   frontend_host: "front-svc"
+  hostname: "test-devops-app.mycloudlab.website"

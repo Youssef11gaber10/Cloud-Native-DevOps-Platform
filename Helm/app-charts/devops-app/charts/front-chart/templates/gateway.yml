@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: devops-app-gateway
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: devops-app.mycloudlab.website
+    external-dns.alpha.kubernetes.io/hostname: {{ .Values.global.hostname }} #devops-app.mycloudlab.website -> in prod
 spec:
   selector:
     istio: gateway    # select pod with label `istio=ingressgateway` -> pod of istio-ingressgateway deployment
@@ -13,4 +13,4 @@ spec:
         name: http
         protocol: HTTP
       hosts:
-        - "devops-app.mycloudlab.website"
+        - {{ .Values.global.hostname }}

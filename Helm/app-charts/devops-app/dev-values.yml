@@ -29,7 +29,7 @@ front-chart:
     tag: "latest"
 
 
-    
+
 global:
 
   db_host: "mysql-svc" # here i set this in mysql chart and also read in backend 
@@ -41,3 +41,5 @@ global:
   ################### end of backend ################
 
   frontend_host: "front-svc"
+
+  hostname: "dev-devops-app.mycloudlab.website"
