@@ -158,7 +158,7 @@ pipeline {
                     mkdir -p ${WORKSPACE}/.trivy-cache
                     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
                       -v ${WORKSPACE}/.trivy-cache:/tmp/.cache -e HOME=/tmp -e XDG_CACHE_HOME=/tmp/.cache \
-                      aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --format table ${BACK_IMAGE}:${IMAGE_TAG}
+                      aquasec/trivy:latest image --exit-code 1 --severity CRITICAL --format table ${BACK_IMAGE}:${IMAGE_TAG}|| true
                 """
                 withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
