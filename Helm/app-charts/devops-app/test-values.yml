@@ -34,6 +34,4 @@ global:
   front_canary_enabled: true
   front_canary_image:
     tag: test-0c20e0f5
-  front_canary_weight:
-    stable: 90
-    canary: 10
+
